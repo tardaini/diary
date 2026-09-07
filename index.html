@@ -802,7 +802,7 @@
   <!-- Bulk Update Log Book Modal -->
   <div id="bulkLogModal" class="modal">
     <div class="modal-content" style="max-width: 950px;">
-      <h2>📖 Update Log Book — Today's Cases</h2>
+      <h2>📖 Update Log Book — Today's Cases (Court Wise: View & Post)</h2>
       <div style="display: flex; gap: 0.8rem; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; justify-content: space-between;">
         <div style="display: flex; gap: 0.8rem; align-items: center;">
           <label style="margin:0;" for="bulkLogDate">Target Hearing Date:</label>
@@ -813,9 +813,15 @@
         </div>
       </div>
 
-      <div class="expand-collapse-controls" style="margin-bottom: 0.5rem;">
-        <button type="button" class="btn-sm-ctrl" onclick="expandAllLogbookCourts()">📂 Expand All Courts</button>
-        <button type="button" class="btn-sm-ctrl" onclick="collapseAllLogbookCourts()">📁 Collapse All Courts</button>
+      <div class="expand-collapse-controls" style="margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="button" class="btn-sm-ctrl" onclick="expandAllLogbookCourts()">📂 Expand All Courts</button>
+          <button type="button" class="btn-sm-ctrl" onclick="collapseAllLogbookCourts()">📁 Collapse All Courts</button>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="button" class="btn-sm-ctrl" style="background-color: #16a34a;" onclick="selectAllLogbookCases()">✅ Select / Fill All</button>
+          <button type="button" class="btn-sm-ctrl" style="background-color: #dc2626;" onclick="removeAllLogbookCasesSelection()">❌ Remove All</button>
+        </div>
       </div>
 
       <form id="bulkLogForm" onsubmit="submitBulkLog(event)">
@@ -1170,7 +1176,7 @@
 
     function openCourtCasesModal(courtName) {
       const filtered = cases.filter(c => c.court === courtName);
-      document.getElementById('courtModalHeaderTitle').innerText = `Logged Cases — ${courtName}`;
+      document.getElementById('courtModalHeaderTitle').innerText = `Cases under Selected Court`;
       
       const body = document.getElementById('courtCasesModalBody');
       body.innerHTML = '';
@@ -1757,7 +1763,7 @@
             <span>🏛️ ${courtName} <span class="badge" style="background:#0284c7; color:white;">${courtCases.length}</span></span>
             <span class="accordion-arrow">▼</span>
           </div>
-          <div class="court-accordion-content" style="display: block;">
+          <div class="court-accordion-content">
             ${cardsHtml}
           </div>
         `;
@@ -1769,14 +1775,31 @@
     function expandAllLogbookCourts() {
       document.querySelectorAll('#bulkLogCasesContainer .court-accordion-group').forEach(group => {
         group.classList.add('expanded');
-        group.querySelector('.court-accordion-content').style.display = 'block';
       });
     }
 
     function collapseAllLogbookCourts() {
       document.querySelectorAll('#bulkLogCasesContainer .court-accordion-group').forEach(group => {
         group.classList.remove('expanded');
-        group.querySelector('.court-accordion-content').style.display = 'none';
+      });
+    }
+
+    function selectAllLogbookCases() {
+      const todayVal = document.getElementById('bulkLogDate').value;
+      document.querySelectorAll('.logbook-case-card').forEach(card => {
+        const notesArea = card.querySelector('.bulk-notes');
+        const nextDateInput = card.querySelector('.bulk-next-date');
+        if (!notesArea.value) notesArea.value = "Adjourned / Taken up";
+        if (!nextDateInput.value && todayVal) nextDateInput.value = todayVal;
+      });
+    }
+
+    function removeAllLogbookCasesSelection() {
+      document.querySelectorAll('.logbook-case-card').forEach(card => {
+        card.querySelector('.bulk-notes').value = "";
+        card.querySelector('.bulk-next-date').value = "";
+        card.querySelector('.bulk-fee').value = "";
+        card.querySelector('.bulk-other-fee').value = "";
       });
     }
 
@@ -1972,19 +1995,20 @@
       });
     }
 
+    // FIXED TOGGLE ACCORDION FUNCTION
     function toggleAccordion(headerEl) {
       const groupDiv = headerEl.parentElement;
       groupDiv.classList.toggle('expanded');
     }
 
     function expandAllCourts() {
-      document.querySelectorAll('.court-accordion-group').forEach(group => {
+      document.querySelectorAll('#courtAccordionContainer .court-accordion-group').forEach(group => {
         group.classList.add('expanded');
       });
     }
 
     function collapseAllCourts() {
-      document.querySelectorAll('.court-accordion-group').forEach(group => {
+      document.querySelectorAll('#courtAccordionContainer .court-accordion-group').forEach(group => {
         group.classList.remove('expanded');
       });
     }
@@ -2519,21 +2543,25 @@
       const filteredCases = cases.filter(c => c.nextDate === targetDate && (c.status === statusOptions[0] || !c.status));
 
       if (filteredCases.length === 0) {
-        alert(`${targetDate} के लिए कोई केस नहीं मिला।`);
+        alert(`चयनित तिथि (${targetDate}) के लिए कोई केस नहीं मिला।`);
         return;
       }
 
       const printWindow = window.open('', '_blank');
-      const caseRows = filteredCases.map((c, index) => `
-        <tr>
-          <td>${index + 1}</td>
-          <td><strong>${c.caseNo}</strong></td>
-          <td>${c.parties}</td>
-          <td>${c.court}</td>
-          <td>${c.stage || 'N/A'}</td>
-          <td>${getClientPlainText(c)}</td>
-        </tr>
-      `).join('');
+      let tableRows = '';
+
+      filteredCases.forEach((c, index) => {
+        tableRows += `
+          <tr>
+            <td>${index + 1}</td>
+            <td><strong>${c.caseNo}</strong></td>
+            <td>${c.parties}</td>
+            <td>${c.court}</td>
+            <td>${c.stage || 'N/A'}</td>
+            <td>${getClientPlainText(c)}</td>
+          </tr>
+        `;
+      });
 
       printWindow.document.write(`
         <!DOCTYPE html>
@@ -2542,31 +2570,30 @@
           <title>Cause List - ${targetDate}</title>
           <style>
             body { font-family: 'Segoe UI', Arial, sans-serif; padding: 25px; color: #1e293b; }
-            h1 { font-size: 1.5rem; margin-bottom: 0.2rem; }
-            .header { border-bottom: 2px solid #1e293b; padding-bottom: 10px; margin-bottom: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            h1 { font-size: 1.4rem; margin-bottom: 0.2rem; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; }
             th, td { border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; font-size: 0.9rem; }
             th { background-color: #f1f5f9; text-transform: uppercase; font-size: 0.8rem; }
             @media print { button { display: none; } }
           </style>
         </head>
         <body>
-          <div class="header">
-            <h1>Daily Cause List — Scheduled Hearings</h1>
-            <small><strong>Hearing Date:</strong> ${targetDate} | <strong>Total:</strong> ${filteredCases.length}</small>
-          </div>
+          <h1>Cause List for ${targetDate}</h1>
+          <p>Total Cases Scheduled: ${filteredCases.length}</p>
           <table>
             <thead>
               <tr>
                 <th>#</th>
-                <th>Case Number</th>
+                <th>Case No</th>
                 <th>Parties</th>
-                <th>Court / Judge</th>
+                <th>Court</th>
                 <th>Stage</th>
-                <th>Client Details</th>
+                <th>Client</th>
               </tr>
             </thead>
-            <tbody>${caseRows}</tbody>
+            <tbody>
+              ${tableRows}
+            </tbody>
           </table>
         </body>
         </html>
@@ -2577,82 +2604,72 @@
       setTimeout(() => { printWindow.print(); }, 250);
     }
 
-    function exportToExcel() {
-      if (cases.length === 0) {
-        alert('निर्यात के लिए कोई केस उपलब्ध नहीं है।');
-        return;
-      }
-
-      let csvContent = "\uFEFF";
-      csvContent += "Status,Case Number,Court/Judge,Parties,Client Name,Client Phone,Next Hearing Date,Current Stage,Total Hearings Recorded\n";
-
-      cases.forEach(c => {
-        const row = [
-          `"${(c.status || statusOptions[0]).replace(/"/g, '""')}"`,
-          `"${(c.caseNo || '').replace(/"/g, '""')}"`,
-          `"${(c.court || '').replace(/"/g, '""')}"`,
-          `"${(c.parties || '').replace(/"/g, '""')}"`,
-          `"${(c.clientName || c.client || '').replace(/"/g, '""')}"`,
-          `"${(c.clientPhone || '').replace(/"/g, '""')}"`,
-          `"${(c.nextDate || '').replace(/"/g, '""')}"`,
-          `"${(c.stage || '').replace(/"/g, '""')}"`,
-          `"${c.history ? c.history.length : 0}"`
-        ];
-        csvContent += row.join(",") + "\n";
-      });
-
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', `Advocate_Cases_Export_${new Date().toISOString().slice(0, 10)}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-
     function exportData() {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cases, null, 2));
       const downloadAnchor = document.createElement('a');
       downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `Advocate_Diary_Full_Backup_${new Date().toISOString().slice(0,10)}.json`);
+      downloadAnchor.setAttribute("download", `Advocate_Diary_Backup_${new Date().toISOString().split('T')[0]}.json`);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
     }
 
-    function importData(event) {
-      const file = event.target.files[0];
+    function importData(e) {
+      const file = e.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
-      reader.onload = async function(e) {
+      reader.onload = function(event) {
         try {
-          const importedData = JSON.parse(e.target.result);
-          if (Array.isArray(importedData)) {
-            if (confirm("डेटा रिस्टोर करने से आपके क्लाउड रिकॉर्ड्स पर असर पड़ सकता है। क्या आप जारी रखना चाहते हैं?")) {
-              for (const c of importedData) {
-                await db.collection('cases').doc(c.id || db.collection('cases').doc().id).set(c);
-              }
-              loadDataFromCloud();
-              alert("डेटा सफलतापूर्वक रिस्टोर हो गया!");
+          const importedCases = JSON.parse(event.target.result);
+          if (Array.isArray(importedCases)) {
+            if (confirm(`बैकअप से कुल ${importedCases.length} केस मिले हैं। क्या आप इन्हें क्लाउड पर रीस्टोर करना चाहते हैं?`)) {
+              importedCases.forEach(async (c) => {
+                if (c.id) {
+                  await db.collection('cases').doc(c.id).set(c);
+                }
+              });
+              setTimeout(() => {
+                loadDataFromCloud();
+                alert("डेटा सफलतापूर्वक रीस्टोर हो गया!");
+              }, 1000);
             }
           } else {
-            alert("अमान्य बैकअप फ़ाइल प्रारूप।");
+            alert("अमान्य JSON फ़ाइल प्रारूप।");
           }
         } catch (err) {
-          alert("फ़ाइल पढ़ने में त्रुटि: " + err.message);
+          alert("फ़ाइल पार्स करने में त्रुटि: " + err.message);
         }
       };
       reader.readAsText(file);
-      event.target.value = '';
     }
 
-    // Initializations
-    setDefaultDate();
-    renderCourtDropdown();
-    renderStatusDropdown();
-    renderFilterBar();
+    function exportToExcel() {
+      let csvContent = "data:text/csv;charset=utf-8,Case ID,Status,Case No,Court,Parties,Client Name,Client Phone,Next Date,Stage\n";
+
+      cases.forEach(c => {
+        const row = [
+          `"${c.id || ''}"`,
+          `"${c.status || 'Ongoing'}"`,
+          `"${c.caseNo || ''}"`,
+          `"${c.court || ''}"`,
+          `"${(c.parties || '').replace(/"/g, '""')}"`,
+          `"${c.clientName || ''}"`,
+          `"${c.clientPhone || ''}"`,
+          `"${c.nextDate || ''}"`,
+          `"${(c.stage || '').replace(/"/g, '""')}"`
+        ];
+        csvContent += row.join(",") + "\n";
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `Advocate_Cases_Export_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
   </script>
 </body>
 </html>
