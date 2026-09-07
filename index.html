@@ -528,7 +528,6 @@
     <div class="login-card">
       <h2>🔐 Portal Login</h2>
       <form id="loginForm" onsubmit="handleLogin(event)">
-        <!-- बदल दिया गया: अब यहाँ Firebase Email/Password इस्तेमाल होगा -->
         <input type="email" id="loginUser" placeholder="Email Address" required>
         <input type="password" id="loginPass" placeholder="Password" required>
         <button type="submit">Login to Access Diary</button>
@@ -707,7 +706,7 @@
     </div>
   </div>
 
-  <!-- FORWARD CASE MODAL -->
+  <!-- FORWARD CASE MODAL (Updated with Court Filter & Bulk Select) -->
   <div id="forwardCaseModal" class="modal">
     <div class="modal-content" style="max-width: 750px;">
       <h2>⏩ Forward Hearing Cases</h2>
@@ -721,6 +720,13 @@
           <label style="margin-top:0;" for="forwardTargetDate">Target New Hearing Date:</label>
           <input type="date" id="forwardTargetDate">
         </div>
+      </div>
+
+      <div style="margin-bottom: 1rem;">
+        <label for="forwardCourtFilter">Filter by Specific Court / Forum:</label>
+        <select id="forwardCourtFilter" onchange="loadForwardCases()">
+          <option value="ALL">-- All Courts / Forums --</option>
+        </select>
       </div>
 
       <label for="forwardReason">Reason / Stage Log (Optional):</label>
@@ -902,14 +908,12 @@
     /* CLOUD DATA FETCHING (FIRESTORE) */
     async function loadDataFromCloud() {
       try {
-        // केसेज लोड करें
         const caseSnapshot = await db.collection('cases').get();
         cases = [];
         caseSnapshot.forEach(doc => {
           cases.push({ id: doc.id, ...doc.data() });
         });
 
-        // कोर्ट विकल्प लोड करें
         const courtDoc = await db.collection('settings').doc('courts').get();
         if (courtDoc.exists && courtDoc.data().options) {
           courtOptions = courtDoc.data().options;
@@ -1097,6 +1101,16 @@
       document.getElementById('forwardReason').value = '';
       document.getElementById('selectAllForward').checked = false;
       
+      // Populate Court Filter Dropdown inside Forward Modal
+      const courtFilterSelect = document.getElementById('forwardCourtFilter');
+      courtFilterSelect.innerHTML = '<option value="ALL">-- All Courts / Forums --</option>';
+      courtOptions.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c;
+        opt.text = c;
+        courtFilterSelect.appendChild(opt);
+      });
+
       loadForwardCases();
       document.getElementById('forwardCaseModal').style.display = 'flex';
     }
@@ -1107,6 +1121,7 @@
 
     function loadForwardCases() {
       const dateVal = document.getElementById('forwardSourceDate').value;
+      const selectedCourtFilter = document.getElementById('forwardCourtFilter').value;
       const container = document.getElementById('forwardCasesContainer');
       container.innerHTML = '';
       document.getElementById('selectAllForward').checked = false;
@@ -1116,10 +1131,15 @@
         return;
       }
 
-      const matchingCases = cases.filter(c => c.nextDate === dateVal && (c.status === 'Ongoing' || !c.status));
+      let matchingCases = cases.filter(c => c.nextDate === dateVal && (c.status === 'Ongoing' || !c.status));
+
+      // Filter by specific court if chosen
+      if (selectedCourtFilter !== 'ALL') {
+        matchingCases = matchingCases.filter(c => c.court === selectedCourtFilter);
+      }
 
       if (matchingCases.length === 0) {
-        container.innerHTML = `<p style="color:#64748b; font-size:0.9rem;">${dateVal} को आगे बढ़ाने के लिए कोई सक्रिय सुनवाई सूचीबद्ध नहीं है।</p>`;
+        container.innerHTML = `<p style="color:#64748b; font-size:0.9rem;">चयनित तिथि एवं कोर्ट के अंतर्गत आगे बढ़ाने के लिए कोई सक्रिय सुनवाई सूचीबद्ध नहीं है।</p>`;
         document.getElementById('forwardSubmitBtn').style.display = 'none';
         return;
       }
