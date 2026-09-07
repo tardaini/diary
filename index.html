@@ -518,6 +518,64 @@
     .forward-item-details {
       flex: 1;
     }
+
+    /* Accordion / Collapse Styles for Court-Wise View */
+    .court-accordion-group {
+      margin-bottom: 0.75rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      overflow: hidden;
+      background: #ffffff;
+    }
+    .court-accordion-header {
+      background-color: #f1f5f9;
+      padding: 0.75rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-weight: bold;
+      color: var(--primary);
+      user-select: none;
+    }
+    .court-accordion-header:hover {
+      background-color: #e2e8f0;
+    }
+    .court-accordion-content {
+      display: none;
+      padding: 0.75rem;
+      border-top: 1px solid #cbd5e1;
+      background: #ffffff;
+    }
+    .court-accordion-group.expanded .court-accordion-content {
+      display: block;
+    }
+    .court-accordion-group.expanded .accordion-arrow {
+      transform: rotate(180deg);
+    }
+    .accordion-arrow {
+      transition: transform 0.2s ease;
+      font-size: 0.8rem;
+    }
+    .expand-collapse-controls {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.8rem;
+    }
+    .btn-sm-ctrl {
+      padding: 0.3rem 0.6rem;
+      font-size: 0.78rem;
+      background-color: #64748b;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      width: auto;
+      margin-top: 0;
+    }
+    .btn-sm-ctrl:hover {
+      background-color: var(--primary);
+    }
   </style>
 </head>
 <body>
@@ -659,18 +717,12 @@
         <h2 id="tableTitle">Active Cases & Daily Cause List</h2>
         <input type="text" id="search" placeholder="🔍 Search by Case No, Client, Phone, Court, or Date..." onkeyup="renderCases()">
         
-        <table>
-          <thead>
-            <tr>
-              <th>Next Date</th>
-              <th>Case Info</th>
-              <th>Court & Stage</th>
-              <th>Client Details</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="caseTableBody"></tbody>
-        </table>
+        <div class="expand-collapse-controls" style="margin-top: 0.8rem;">
+          <button type="button" class="btn-sm-ctrl" onclick="expandAllCourts()">📂 Expand All Courts</button>
+          <button type="button" class="btn-sm-ctrl" onclick="collapseAllCourts()">📁 Collapse All Courts</button>
+        </div>
+
+        <div id="courtAccordionContainer" style="margin-top: 0.5rem;"></div>
       </div>
 
       <div id="feeResultsCard" class="card" style="display:none;">
@@ -1513,7 +1565,7 @@
       const activeBtn = document.getElementById(`filter-${status}`);
       if (activeBtn) activeBtn.classList.add('active');
 
-      document.getElementById('tableTitle').innerText = status === 'All' ? 'All Registered Cases' : `${status} Cases & Cause List`;
+      document.getElementById('tableTitle').innerText = status === 'All' ? 'Active Cases & Daily Cause List' : `${status} Cases & Cause List`;
       renderCases();
     }
 
@@ -1714,45 +1766,112 @@
     }
 
     function renderCases() {
-      const tbody = document.getElementById('caseTableBody');
+      const accordionContainer = document.getElementById('courtAccordionContainer');
       const search = document.getElementById('search').value.toLowerCase();
-      tbody.innerHTML = '';
+      accordionContainer.innerHTML = '';
 
-      const sortedCases = [...cases].sort((a, b) => new Date(b.nextDate) - new Date(a.nextDate));
-
-      sortedCases.forEach(c => {
+      // Filter cases according to status and search query
+      const filteredCases = cases.filter(c => {
         const status = c.status || statusOptions[0];
-
         if (currentFilter !== 'All' && status !== currentFilter) {
-          return;
+          return false;
         }
-
         const clientInfoText = `${c.clientName || ''} ${c.clientPhone || ''} ${c.client || ''}`;
         const queryStr = `${c.caseNo} ${c.court} ${c.parties} ${clientInfoText} ${c.nextDate} ${status}`.toLowerCase();
-        
-        if (queryStr.includes(search)) {
-          const historyCount = c.history ? c.history.length : 0;
-          const tr = document.createElement('tr');
+        return queryStr.includes(search);
+      });
 
-          tr.innerHTML = `
-            <td>
-              <strong>${c.nextDate}</strong><br>
-              <span class="status-tag">${status}</span>
-            </td>
-            <td><strong>${c.caseNo}</strong><br><small>${c.parties}</small></td>
-            <td>${c.court || '<em>Not set</em>'}<br><small><em>Stage: ${c.stage || 'N/A'}</em></small></td>
-            <td>${getClientDisplay(c)}</td>
-            <td class="actions">
-              <button class="btn-action btn-history" onclick="openHistoryModal('${c.id}')" title="View/Add Hearing Records">
-                📋 Logs (${historyCount})
-              </button>
-              <button class="btn-action btn-print" onclick="printCase('${c.id}')" title="Print Case Summary">🖨️ Summary</button>
-              <button class="btn-action btn-edit" onclick="editCase('${c.id}')">Edit</button>
-              <button class="btn-action btn-delete" onclick="deleteCase('${c.id}')">X</button>
-            </td>
-          `;
-          tbody.appendChild(tr);
+      // Group cases by court
+      const groupedByCourt = {};
+      filteredCases.forEach(c => {
+        const courtName = c.court || 'Uncategorized Court';
+        if (!groupedByCourt[courtName]) {
+          groupedByCourt[courtName] = [];
         }
+        groupedByCourt[courtName].push(c);
+      });
+
+      // Sort courts alphabetically
+      const sortedCourts = Object.keys(groupedByCourt).sort();
+
+      if (sortedCourts.length === 0) {
+        accordionContainer.innerHTML = `<p style="text-align: center; color: #64748b; padding: 1rem;">कोई केस नहीं मिला।</p>`;
+        return;
+      }
+
+      sortedCourts.forEach(courtName => {
+        const courtCases = groupedByCourt[courtName];
+        courtCases.sort((a, b) => new Date(b.nextDate) - new Date(a.nextDate));
+
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'court-accordion-group'; // Default closed (collapse mode)
+
+        let tableRowsHtml = '';
+        courtCases.forEach(c => {
+          const status = c.status || statusOptions[0];
+          const historyCount = c.history ? c.history.length : 0;
+          tableRowsHtml += `
+            <tr>
+              <td>
+                <strong>${c.nextDate}</strong><br>
+                <span class="status-tag">${status}</span>
+              </td>
+              <td><strong>${c.caseNo}</strong><br><small>${c.parties}</small></td>
+              <td><small><em>Stage: ${c.stage || 'N/A'}</em></small></td>
+              <td>${getClientDisplay(c)}</td>
+              <td class="actions">
+                <button class="btn-action btn-history" onclick="openHistoryModal('${c.id}')" title="View/Add Hearing Records">
+                  📋 Logs (${historyCount})
+                </button>
+                <button class="btn-action btn-print" onclick="printCase('${c.id}')" title="Print Case Summary">🖨️ Summary</button>
+                <button class="btn-action btn-edit" onclick="editCase('${c.id}')">Edit</button>
+                <button class="btn-action btn-delete" onclick="deleteCase('${c.id}')">X</button>
+              </td>
+            </tr>
+          `;
+        });
+
+        groupDiv.innerHTML = `
+          <div class="court-accordion-header" onclick="toggleAccordion(this)">
+            <span>🏛️ ${courtName} <span class="badge" style="background:#0284c7; color:white;">${courtCases.length}</span></span>
+            <span class="accordion-arrow">▼</span>
+          </div>
+          <div class="court-accordion-content">
+            <table>
+              <thead>
+                <tr>
+                  <th>Next Date</th>
+                  <th>Case Info</th>
+                  <th>Stage</th>
+                  <th>Client Details</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${tableRowsHtml}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        accordionContainer.appendChild(groupDiv);
+      });
+    }
+
+    function toggleAccordion(headerEl) {
+      const groupDiv = headerEl.parentElement;
+      groupDiv.classList.toggle('expanded');
+    }
+
+    function expandAllCourts() {
+      document.querySelectorAll('.court-accordion-group').forEach(group => {
+        group.classList.add('expanded');
+      });
+    }
+
+    function collapseAllCourts() {
+      document.querySelectorAll('.court-accordion-group').forEach(group => {
+        group.classList.remove('expanded');
       });
     }
 
