@@ -266,6 +266,7 @@
     .btn-delete { background-color: #dc2626; }
     .btn-translate { background-color: #4338ca; width: auto; margin-top: 0.2rem; padding: 0.35rem 0.6rem; font-size: 0.75rem; }
     .btn-logbook { background-color: #d97706; width: auto; margin: 0; }
+    .btn-caselist { background-color: #0284c7; width: auto; margin: 0; }
 
     .court-control-wrapper {
       display: flex;
@@ -486,6 +487,7 @@
       border-radius: 6px;
       padding: 0.8rem;
       margin-bottom: 0.8rem;
+      position: relative;
     }
     .logbook-grid {
       display: grid;
@@ -576,6 +578,34 @@
     .btn-sm-ctrl:hover {
       background-color: var(--primary);
     }
+
+    /* Case List Specific Styles */
+    .party-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0.8rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      margin-bottom: 0.4rem;
+      gap: 1rem;
+    }
+    .party-item-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #1e293b;
+      flex: 1;
+    }
+    .cause-no-input {
+      width: 120px !important;
+      padding: 0.35rem !important;
+      margin: 0 !important;
+      font-size: 0.85rem !important;
+      text-align: center;
+      border: 1px solid #0f766e !important;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
@@ -601,6 +631,7 @@
         <!-- Dynamically Rendered Status Filter Buttons -->
       </div>
 
+      <button class="btn-caselist" onclick="openCaseListModal()">📜 Print Case List</button>
       <button class="btn-forward" onclick="openForwardCaseModal()">⏩ Forward Case</button>
       <button class="btn-logbook" onclick="openBulkLogModal()">📖 Update Log Book</button>
       <button class="btn-specific" onclick="printSpecificDateCaseList2Col()">📆 Print Specific Day Case List</button>
@@ -744,6 +775,29 @@
     </div>
   </div>
 
+  <!-- PARTIES-ONLY CASE LIST MODAL -->
+  <div id="caseListModal" class="modal">
+    <div class="modal-content" style="max-width: 850px;">
+      <h2>📜 Court-Wise Parties Case List & Sl. Editing</h2>
+      <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; background: #f1f5f9; padding: 0.8rem; border-radius: 6px; flex-wrap: wrap;">
+        <div>
+          <label style="margin:0;" for="caseListDate">Select Hearing Date:</label>
+          <input type="date" id="caseListDate" style="width: auto; margin: 0;" onchange="loadCaseListModalData()">
+        </div>
+        <div style="font-size: 0.85rem; color: #475569;">
+          <em>Provide or edit Cause Sl. No for each case before printing.</em>
+        </div>
+      </div>
+
+      <div id="caseListModalContainer" style="max-height: 450px; overflow-y: auto;"></div>
+
+      <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+        <button type="button" class="btn-print" style="margin-top: 0; width: 50%;" onclick="printPartiesCaseList()">🖨️ Print 2-Column Zigzag List</button>
+        <button type="button" class="btn-secondary" style="margin-top: 0; width: 50%;" onclick="closeCaseListModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Court Case List Modal -->
   <div id="courtCasesModal" class="modal">
     <div class="modal-content" style="max-width: 900px;">
@@ -771,11 +825,17 @@
         </div>
       </div>
 
-      <div style="margin-bottom: 1rem;">
-        <label for="forwardCourtFilter">Filter by Specific Court / Forum:</label>
-        <select id="forwardCourtFilter" onchange="loadForwardCases()">
-          <option value="ALL">-- All Courts / Forums --</option>
-        </select>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+        <div>
+          <label for="forwardCourtFilter">Filter by Specific Court / Forum:</label>
+          <select id="forwardCourtFilter" onchange="loadForwardCases()">
+            <option value="ALL">-- All Courts / Forums --</option>
+          </select>
+        </div>
+        <div>
+          <label for="forwardSearch">🔍 Search Cases to Forward:</label>
+          <input type="text" id="forwardSearch" placeholder="Search case no, parties, client..." onkeyup="loadForwardCases()" style="margin-top: 0.2rem;">
+        </div>
       </div>
 
       <label for="forwardReason">Reason / Stage Log (Optional):</label>
@@ -820,14 +880,14 @@
         </div>
         <div style="display: flex; gap: 0.5rem;">
           <button type="button" class="btn-sm-ctrl" style="background-color: #16a34a;" onclick="selectAllLogbookCases()">✅ Select / Fill All</button>
-          <button type="button" class="btn-sm-ctrl" style="background-color: #dc2626;" onclick="removeAllLogbookCasesSelection()">❌ Remove All</button>
+          <button type="button" class="btn-sm-ctrl" style="background-color: #dc2626;" onclick="removeAllLogbookCasesSelection()">❌ Uncheck All</button>
         </div>
       </div>
 
       <form id="bulkLogForm" onsubmit="submitBulkLog(event)">
         <div id="bulkLogCasesContainer" style="max-height: 450px; overflow-y: auto; padding-right: 4px;"></div>
         <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-          <button type="submit" id="bulkSubmitBtn" style="background-color: #16a34a; margin-top: 0;">Submit & Post All to Next Hearing (Bulk Posting)</button>
+          <button type="submit" id="bulkSubmitBtn" style="background-color: #16a34a; margin-top: 0;">Submit & Post Selected Cases to Next Hearing</button>
           <button type="button" class="btn-secondary" style="margin-top: 0; width: 100%;" onclick="closeBulkLogModal()">Cancel</button>
         </div>
       </form>
@@ -1011,7 +1071,7 @@
 
         saveAndRefresh();
       } catch (error) {
-        console.error("Cloud से डेटा लोड करने में त्रुटि: ", error);
+        console.error("Error loading data from cloud: ", error);
       }
     }
 
@@ -1020,7 +1080,7 @@
         await db.collection('cases').doc(caseData.id).set(caseData);
         loadDataFromCloud();
       } catch (error) {
-        alert("क्लाउड पर सेव करने में त्रुटि: " + error.message);
+        alert("Error saving to cloud: " + error.message);
       }
     }
 
@@ -1030,7 +1090,7 @@
         cases = cases.filter(c => c.id !== caseId);
         saveAndRefresh();
       } catch (error) {
-        alert("क्लाउड से डिलीट करने में त्रुटि: " + error.message);
+        alert("Error deleting from cloud: " + error.message);
       }
     }
 
@@ -1038,7 +1098,7 @@
       try {
         await db.collection('settings').doc('courts').set({ options: courtOptions });
       } catch (error) {
-        console.error("कोर्ट सेटिंग्स अपडेट करने में त्रुटि: ", error);
+        console.error("Error updating court settings: ", error);
       }
     }
 
@@ -1046,7 +1106,7 @@
       try {
         await db.collection('settings').doc('statuses').set({ options: statusOptions });
       } catch (error) {
-        console.error("स्टेटस सेटिंग्स अपडेट करने में त्रुटि: ", error);
+        console.error("Error updating status settings: ", error);
       }
     }
 
@@ -1082,7 +1142,7 @@
       const textToTranslate = partyInput.value.trim();
 
       if (!textToTranslate) {
-        alert("अनुवाद के लिए कृपया पार्टियों का नाम दर्ज करें।");
+        alert("Please enter parties name to translate.");
         return;
       }
 
@@ -1093,10 +1153,10 @@
           partyInput.value = data.responseData.translatedText;
           checkDuplicateParties();
         } else {
-          alert("अनुवाद विफल रहा। कृपया पुनः प्रयास करें।");
+          alert("Translation failed. Please try again.");
         }
       } catch (err) {
-        alert("अनुवाद सेवा से कनेक्ट करने में त्रुटि: " + err.message);
+        alert("Error connecting to translation service: " + err.message);
       }
     }
 
@@ -1107,7 +1167,7 @@
       if (courtOptions.length === 0) {
         const option = document.createElement('option');
         option.value = '';
-        option.text = '-- कोई कोर्ट नहीं जोड़ा गया --';
+        option.text = '-- No court added --';
         courtSelect.appendChild(option);
         return;
       }
@@ -1130,7 +1190,7 @@
       if (statusOptions.length === 0) {
         const option = document.createElement('option');
         option.value = '';
-        option.text = '-- कोई स्टेटस नहीं जोड़ा गया --';
+        option.text = '-- No status added --';
         statusSelect.appendChild(option);
         return;
       }
@@ -1152,7 +1212,7 @@
       
       statusOptions.forEach(s => {
         const isActive = currentFilter === s ? 'active' : '';
-        html += `<button class="btn-filter ${isActive}" id="filter-${s}" onclick="setFilter('${s}')">${s} <span class="badge" id="count-${s}">0</span></button>`;
+        html += `<button class="btn-filter ${isActive}" id="filter-${s}" onclick="setFilter('${s}')">${s} <span class="badge" id="count-${s}">${0}</span></button>`;
       });
 
       filterBar.innerHTML = html;
@@ -1174,6 +1234,258 @@
       });
     }
 
+    /* --- CASE LIST MODAL & PRINT FUNCTIONALITY --- */
+    function openCaseListModal() {
+      const todayStr = new Date().toISOString().split('T')[0];
+      document.getElementById('caseListDate').value = todayStr;
+      loadCaseListModalData();
+      document.getElementById('caseListModal').style.display = 'flex';
+    }
+
+    function closeCaseListModal() {
+      document.getElementById('caseListModal').style.display = 'none';
+    }
+
+    function loadCaseListModalData() {
+      const targetDate = document.getElementById('caseListDate').value;
+      const container = document.getElementById('caseListModalContainer');
+      container.innerHTML = '';
+
+      if (!targetDate) {
+        container.innerHTML = '<p style="color:#64748b;">Please select a valid date.</p>';
+        return;
+      }
+
+      const activeCases = cases.filter(c => c.nextDate === targetDate && (c.status === statusOptions[0] || !c.status));
+
+      if (activeCases.length === 0) {
+        container.innerHTML = `<p style="color:#64748b; font-size:0.9rem; text-align:center; padding: 1rem;">No cases scheduled for ${targetDate}.</p>`;
+        return;
+      }
+
+      const groupedByCourt = {};
+      activeCases.forEach(c => {
+        const courtName = c.court || 'Uncategorized Court';
+        if (!groupedByCourt[courtName]) {
+          groupedByCourt[courtName] = [];
+        }
+        groupedByCourt[courtName].push(c);
+      });
+
+      Object.keys(groupedByCourt).sort().forEach(courtName => {
+        const courtCases = groupedByCourt[courtName];
+        let partyRows = '';
+
+        courtCases.forEach((c, index) => {
+          const currentCauseVal = c.causeNo || (index + 1);
+          partyRows += `
+            <div class="party-item-row" data-case-id="${c.id}">
+              <div class="party-item-name">${c.parties} <br><small style="color:#64748b;">Case No: ${c.caseNo}</small></div>
+              <input type="text" class="cause-no-input" value="${currentCauseVal}" placeholder="Cause Sl. No" title="Enter Cause List Sl. No" onchange="updateCaseCauseNo('${c.id}', this.value)">
+            </div>
+          `;
+        });
+
+        const accordionGroup = document.createElement('div');
+        accordionGroup.className = 'court-accordion-group expanded';
+        accordionGroup.innerHTML = `
+          <div class="court-accordion-header" onclick="toggleAccordion(this)">
+            <span>🏛️ ${courtName} <span class="badge" style="background:#0284c7; color:white;">${courtCases.length}</span></span>
+            <span class="accordion-arrow">▼</span>
+          </div>
+          <div class="court-accordion-content">
+            ${partyRows}
+          </div>
+        `;
+
+        container.appendChild(accordionGroup);
+      });
+    }
+
+    async function updateCaseCauseNo(caseId, value) {
+      const targetCase = cases.find(c => c.id === caseId);
+      if (targetCase) {
+        targetCase.causeNo = value.trim();
+        await db.collection('cases').doc(caseId).set(targetCase);
+      }
+    }
+
+    function printPartiesCaseList() {
+      const targetDate = document.getElementById('caseListDate').value;
+      const activeCases = cases.filter(c => c.nextDate === targetDate && (c.status === statusOptions[0] || !c.status));
+
+      if (activeCases.length === 0) {
+        alert("No cases available to print.");
+        return;
+      }
+
+      const causeNoMap = {};
+      document.querySelectorAll('.party-item-row').forEach(row => {
+        const caseId = row.getAttribute('data-case-id');
+        const causeVal = row.querySelector('.cause-no-input').value.trim();
+        if (caseId) {
+          causeNoMap[caseId] = causeVal;
+        }
+      });
+
+      const groupedByCourt = {};
+      activeCases.forEach(c => {
+        const courtName = c.court || 'Uncategorized Court';
+        if (!groupedByCourt[courtName]) {
+          groupedByCourt[courtName] = [];
+        }
+        groupedByCourt[courtName].push(c);
+      });
+
+      let printBodyHtml = '';
+      Object.keys(groupedByCourt).sort().forEach(courtName => {
+        const courtCases = groupedByCourt[courtName];
+        let caseListItems = '';
+
+        courtCases.forEach((c, idx) => {
+          const causeSl = causeNoMap[c.id] || c.causeNo || (idx + 1);
+          caseListItems += `
+            <div class="print-party-item">
+              <span class="cause-tag">Sl #${causeSl}</span>
+              <div class="party-info">
+                <div class="party-title">${c.parties}</div>
+                <div class="case-meta-line">Case No: ${c.caseNo} | Client: ${getClientPlainText(c)}</div>
+              </div>
+            </div>
+          `;
+        });
+
+        printBodyHtml += `
+          <div class="print-court-section">
+            <div class="print-court-title">🏛️ ${courtName}</div>
+            <div class="print-parties-list">
+              ${caseListItems}
+            </div>
+          </div>
+        `;
+      });
+
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Case List - ${targetDate}</title>
+          <style>
+            @page { 
+              size: A4 portrait; 
+              margin: 10mm; 
+            }
+            body { 
+              font-family: 'Segoe UI', Arial, sans-serif; 
+              color: #0f172a; 
+              margin: 0; 
+              padding: 0; 
+              font-size: 10px;
+            }
+            .header { 
+              border-bottom: 2px solid #1e293b; 
+              padding-bottom: 4px; 
+              margin-bottom: 12px; 
+            }
+            .header h1 { 
+              font-size: 14px; 
+              margin: 0 0 2px 0; 
+              text-transform: uppercase; 
+            }
+            .header small { 
+              font-size: 10px; 
+              color: #475569; 
+            }
+
+            /* Zigzag 2-Column Mode Engine */
+            .columns-wrapper {
+              column-count: 2;
+              column-gap: 15px;
+              column-fill: auto;
+              width: 100%;
+            }
+
+            .print-court-section {
+              break-inside: avoid;
+              page-break-inside: avoid;
+              margin-bottom: 10px;
+              border: 1px solid #cbd5e1;
+              border-radius: 4px;
+              overflow: hidden;
+              display: inline-block;
+              width: 100%;
+            }
+            .print-court-title {
+              background: #1e293b;
+              color: #ffffff;
+              font-weight: bold;
+              font-size: 11px;
+              padding: 4px 8px;
+            }
+            .print-parties-list {
+              padding: 4px 8px;
+            }
+            .print-party-item {
+              display: flex;
+              align-items: flex-start;
+              gap: 8px;
+              padding: 4px 0;
+              border-bottom: 1px dashed #e2e8f0;
+              break-inside: avoid;
+              page-break-inside: avoid;
+            }
+            .print-party-item:last-child {
+              border-bottom: none;
+            }
+            .cause-tag {
+              background: #0f766e;
+              color: white;
+              font-weight: bold;
+              padding: 1px 5px;
+              border-radius: 3px;
+              font-size: 9px;
+              min-width: 40px;
+              text-align: center;
+              margin-top: 2px;
+            }
+            .party-info {
+              flex: 1;
+            }
+            .party-title {
+              font-weight: 600;
+              font-size: 10px;
+            }
+            .case-meta-line {
+              font-size: 9px;
+              color: #64748b;
+            }
+
+            @media print { 
+              button { display: none; } 
+              .columns-wrapper {
+                column-fill: auto;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Cause List Parties - ${targetDate}</h1>
+            <small>Total Scheduled Cases: ${activeCases.length}</small>
+          </div>
+          <div class="columns-wrapper">
+            ${printBodyHtml}
+          </div>
+        </body>
+        </html>
+      `);
+
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => { printWindow.print(); }, 250);
+    }
+
     function openCourtCasesModal(courtName) {
       const filtered = cases.filter(c => c.court === courtName);
       document.getElementById('courtModalHeaderTitle').innerText = `Cases under Selected Court`;
@@ -1182,7 +1494,7 @@
       body.innerHTML = '';
 
       if (filtered.length === 0) {
-        body.innerHTML = `<p style="color:#64748b; font-size:0.9rem;">इस कोर्ट/जudge के अंतर्गत वर्तमान में कोई केस पंजीकृत नहीं है।</p>`;
+        body.innerHTML = `<p style="color:#64748b; font-size:0.9rem;">No cases registered under this court/judge.</p>`;
       } else {
         let tableHtml = `
           <table>
@@ -1228,6 +1540,7 @@
       document.getElementById('forwardSourceDate').value = todayStr;
       document.getElementById('forwardTargetDate').value = '';
       document.getElementById('forwardReason').value = '';
+      document.getElementById('forwardSearch').value = '';
       document.getElementById('selectAllForward').checked = false;
       
       const courtFilterSelect = document.getElementById('forwardCourtFilter');
@@ -1250,12 +1563,13 @@
     function loadForwardCases() {
       const dateVal = document.getElementById('forwardSourceDate').value;
       const selectedCourtFilter = document.getElementById('forwardCourtFilter').value;
+      const searchQuery = document.getElementById('forwardSearch').value.toLowerCase().trim();
       const container = document.getElementById('forwardCasesContainer');
       container.innerHTML = '';
       document.getElementById('selectAllForward').checked = false;
 
       if (!dateVal) {
-        container.innerHTML = '<p>कृपया एक वैध स्रोत तिथि चुनें।</p>';
+        container.innerHTML = '<p>Please select a valid source date.</p>';
         return;
       }
 
@@ -1265,8 +1579,15 @@
         matchingCases = matchingCases.filter(c => c.court === selectedCourtFilter);
       }
 
+      if (searchQuery) {
+        matchingCases = matchingCases.filter(c => {
+          const text = `${c.caseNo} ${c.parties} ${c.court} ${c.stage || ''} ${c.clientName || ''} ${c.clientPhone || ''}`.toLowerCase();
+          return text.includes(searchQuery);
+        });
+      }
+
       if (matchingCases.length === 0) {
-        container.innerHTML = `<p style="color:#64748b; font-size:0.9rem;">चयनित तिथि एवं कोर्ट के अंतर्गत आगे बढ़ाने के लिए कोई सक्रिय सुनवाई सूचीबद्ध नहीं है।</p>`;
+        container.innerHTML = `<p style="color:#64748b; font-size:0.9rem;">No active hearings found matching criteria.</p>`;
         document.getElementById('forwardSubmitBtn').style.display = 'none';
         return;
       }
@@ -1299,13 +1620,13 @@
       const reason = document.getElementById('forwardReason').value.trim();
 
       if (!targetDate) {
-        alert("कृपया अगली सुनवाई की एक वैध नई तारीख चुनें।");
+        alert("Please select a valid target hearing date.");
         return;
       }
 
       const selectedCheckboxes = document.querySelectorAll('.forward-checkbox:checked');
       if (selectedCheckboxes.length === 0) {
-        alert("कृपया आगे बढ़ाने के लिए कम से कम एक केस चुनें।");
+        alert("Please select at least one case to forward.");
         return;
       }
 
@@ -1317,7 +1638,7 @@
           const forwardLog = {
             date: sourceDate,
             stage: targetCase.stage || 'Adjourned',
-            notes: reason ? `[Case Forwarded] ${reason}` : `सुनवाई की तारीख ${sourceDate} से बढ़ाकर ${targetDate} कर दी गई`,
+            notes: reason ? `[Case Forwarded] ${reason}` : `Hearing date forwarded from ${sourceDate} to ${targetDate}`,
             assignedNextDate: targetDate,
             fee: 0,
             otherFee: 0
@@ -1333,7 +1654,7 @@
 
       loadDataFromCloud();
       closeForwardCaseModal();
-      alert(`सफलतापूर्वक ${selectedCheckboxes.length} केस ${targetDate} पर फॉरवर्ड कर दिए गए!`);
+      alert(`Successfully forwarded ${selectedCheckboxes.length} case(s) to ${targetDate}!`);
     }
 
     /* --- COURT MANAGEMENT --- */
@@ -1351,7 +1672,7 @@
       const selectedValue = courtSelect.value;
 
       if (!selectedValue) {
-        alert("संपादित करने के लिए कोई कोर्ट नहीं चुना गया है।");
+        alert("No court selected to edit.");
         return;
       }
 
@@ -1372,13 +1693,13 @@
       const oldCourtVal = document.getElementById('oldCourtVal').value.trim();
 
       if (!newCourtVal) {
-        alert("कृपया वैध कोर्ट का नाम दर्ज करें।");
+        alert("Please enter a valid court name.");
         return;
       }
 
       if (oldCourtVal) {
         if (oldCourtVal !== newCourtVal && courtOptions.some(c => c.toLowerCase() === newCourtVal.toLowerCase())) {
-          alert("यह कोर्ट नाम पहले से मौजूद है।");
+          alert("This court name already exists.");
           return;
         }
 
@@ -1401,7 +1722,7 @@
       }
 
       if (courtOptions.some(c => c.toLowerCase() === newCourtVal.toLowerCase())) {
-        alert("यह कोर्ट नाम पहले से मौजूद है।");
+        alert("This court name already exists.");
         return;
       }
 
@@ -1417,11 +1738,11 @@
       const selectedValue = courtSelect.value;
 
       if (!selectedValue) {
-        alert("हटाने के लिए कोई कोर्ट नहीं चुना गया है।");
+        alert("No court selected to delete.");
         return;
       }
 
-      if (confirm(`क्या आप वाकई "${selectedValue}" को हटाना चाहते हैं?`)) {
+      if (confirm(`Are you sure you want to delete "${selectedValue}"?`)) {
         courtOptions = courtOptions.filter(c => c !== selectedValue);
         
         cases.forEach(c => {
@@ -1451,7 +1772,7 @@
       const selectedValue = statusSelect.value;
 
       if (!selectedValue) {
-        alert("संपादित करने के लिए कोई स्टेटस नहीं चुना गया है।");
+        alert("No status selected to edit.");
         return;
       }
 
@@ -1472,13 +1793,13 @@
       const oldStatusVal = document.getElementById('oldStatusVal').value.trim();
 
       if (!newStatusVal) {
-        alert("कृपया वैध स्टेटस नाम दर्ज करें।");
+        alert("Please enter a valid status name.");
         return;
       }
 
       if (oldStatusVal) {
         if (oldStatusVal !== newStatusVal && statusOptions.some(s => s.toLowerCase() === newStatusVal.toLowerCase())) {
-          alert("यह स्टेटस पहले से मौजूद है।");
+          alert("This status already exists.");
           return;
         }
 
@@ -1501,7 +1822,7 @@
       }
 
       if (statusOptions.some(s => s.toLowerCase() === newStatusVal.toLowerCase())) {
-        alert("यह स्टेटस पहले से मौजूद है।");
+        alert("This status already exists.");
         return;
       }
 
@@ -1517,16 +1838,16 @@
       const selectedValue = statusSelect.value;
 
       if (!selectedValue) {
-        alert("हटाने के लिए कोई स्टेटस नहीं चुना गया है।");
+        alert("No status selected to delete.");
         return;
       }
 
       if (statusOptions.length <= 1) {
-        alert("कम से कम एक स्टेटस होना अनिवार्य है।");
+        alert("At least one status option is required.");
         return;
       }
 
-      if (confirm(`क्या आप वाकई "${selectedValue}" स्टेटस को हटाना चाहते हैं?`)) {
+      if (confirm(`Are you sure you want to delete status "${selectedValue}"?`)) {
         statusOptions = statusOptions.filter(s => s !== selectedValue);
         
         cases.forEach(c => {
@@ -1562,7 +1883,7 @@
       });
 
       if (matches.length > 0) {
-        let alertHTML = `<strong>⚠️ चेतावनी: मिलता-जुलता केस मिला!</strong><br>`;
+        let alertHTML = `<strong>⚠️ Warning: Similar case found!</strong><br>`;
         matches.forEach(m => {
           alertHTML += `• <strong>${m.caseNo}</strong> (${m.status}): ${m.parties} (Next: ${m.nextDate})<br>`;
         });
@@ -1622,6 +1943,7 @@
         client: `${clientName} ${clientPhone ? '(' + clientPhone + ')' : ''}`.trim(),
         nextDate: document.getElementById('nextDate').value,
         stage: document.getElementById('stage').value,
+        causeNo: existingCase ? existingCase.causeNo : '',
         history: existingCase ? existingCase.history : []
       };
 
@@ -1682,7 +2004,7 @@
       container.innerHTML = '';
 
       if (!dateVal) {
-        container.innerHTML = '<p>कृपया एक वैध तारीख चुनें।</p>';
+        container.innerHTML = '<p>Please select a valid date.</p>';
         return;
       }
 
@@ -1696,14 +2018,13 @@
       }
 
       if (matchingCases.length === 0) {
-        container.innerHTML = `<p style="color:#64748b; font-size:0.9rem; text-align:center; padding: 1rem;">${dateVal} के लिए कोई सक्रिय केस सुनवाई सूचीबद्ध नहीं है।</p>`;
+        container.innerHTML = `<p style="color:#64748b; font-size:0.9rem; text-align:center; padding: 1rem;">No active hearing scheduled for ${dateVal}.</p>`;
         document.getElementById('bulkSubmitBtn').style.display = 'none';
         return;
       }
 
       document.getElementById('bulkSubmitBtn').style.display = 'block';
 
-      // Group cases by court for court-wise view inside logbook
       const groupedByCourt = {};
       matchingCases.forEach(c => {
         const courtName = c.court || 'Uncategorized Court';
@@ -1722,17 +2043,23 @@
             <div class="logbook-case-card" id="log_card_${c.id}">
               <input type="hidden" class="bulk-case-id" value="${c.id}">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
-                <div style="font-weight: bold; font-size: 0.95rem; color: var(--primary);">
-                  #${idx + 1} — ${c.caseNo} (${c.parties})
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <input type="checkbox" class="logbook-select-chk" checked style="width: 1.1rem; height: 1.1rem; margin: 0; cursor: pointer;" title="Include this case in bulk posting">
+                  <span style="font-weight: bold; font-size: 0.95rem; color: var(--primary);">
+                    #${idx + 1} — ${c.caseNo} (${c.parties})
+                  </span>
                 </div>
-                <button type="button" class="btn-sm" style="background-color: #0f766e; margin-top:0;" onclick="submitIndividualLog('${c.id}')">💾 Save Individual Posting</button>
+                <div style="display: flex; gap: 0.3rem;">
+                  <button type="button" class="btn-sm" style="background-color: #0f766e; margin-top:0;" onclick="submitIndividualLog('${c.id}')">💾 Save Single</button>
+                  <button type="button" class="btn-sm btn-delete" style="margin-top:0;" onclick="removeLogbookCard('${c.id}')">❌ Remove</button>
+                </div>
               </div>
               <div style="font-size:0.8rem; color:#64748b; margin-bottom: 0.4rem;">
                 Court: ${c.court} | Client: ${getClientPlainText(c)}
               </div>
 
               <label>Proceedings / Remarks</label>
-              <textarea class="bulk-notes" rows="2" placeholder="कार्यवाही दर्ज करें..." required></textarea>
+              <textarea class="bulk-notes" rows="2" placeholder="Enter proceedings..." required></textarea>
 
               <div class="logbook-grid">
                 <div>
@@ -1757,7 +2084,7 @@
         });
 
         const accordionGroup = document.createElement('div');
-        accordionGroup.className = 'court-accordion-group expanded'; // Expanded by default in logbook
+        accordionGroup.className = 'court-accordion-group expanded';
         accordionGroup.innerHTML = `
           <div class="court-accordion-header" onclick="toggleAccordion(this)">
             <span>🏛️ ${courtName} <span class="badge" style="background:#0284c7; color:white;">${courtCases.length}</span></span>
@@ -1770,6 +2097,18 @@
 
         container.appendChild(accordionGroup);
       });
+    }
+
+    function removeLogbookCard(caseId) {
+      const card = document.getElementById(`log_card_${caseId}`);
+      if (card) {
+        const accordionContent = card.parentElement;
+        card.remove();
+        if (accordionContent && accordionContent.querySelectorAll('.logbook-case-card').length === 0) {
+          const group = accordionContent.parentElement;
+          if (group) group.remove();
+        }
+      }
     }
 
     function expandAllLogbookCourts() {
@@ -1787,6 +2126,9 @@
     function selectAllLogbookCases() {
       const todayVal = document.getElementById('bulkLogDate').value;
       document.querySelectorAll('.logbook-case-card').forEach(card => {
+        const chk = card.querySelector('.logbook-select-chk');
+        if (chk) chk.checked = true;
+
         const notesArea = card.querySelector('.bulk-notes');
         const nextDateInput = card.querySelector('.bulk-next-date');
         if (!notesArea.value) notesArea.value = "Adjourned / Taken up";
@@ -1796,6 +2138,9 @@
 
     function removeAllLogbookCasesSelection() {
       document.querySelectorAll('.logbook-case-card').forEach(card => {
+        const chk = card.querySelector('.logbook-select-chk');
+        if (chk) chk.checked = false;
+
         card.querySelector('.bulk-notes').value = "";
         card.querySelector('.bulk-next-date').value = "";
         card.querySelector('.bulk-fee').value = "";
@@ -1815,12 +2160,12 @@
       const otherFee = parseFloat(card.querySelector('.bulk-other-fee').value) || 0;
 
       if (!notes) {
-        alert("कृपया कार्यवाही (Proceedings / Remarks) दर्ज करें।");
+        alert("Please enter proceedings / remarks.");
         card.querySelector('.bulk-notes').focus();
         return;
       }
       if (!nextDate) {
-        alert("कृपया अगली सुनवाई की तारीख चुनें।");
+        alert("Please select a next hearing date.");
         card.querySelector('.bulk-next-date').focus();
         return;
       }
@@ -1844,8 +2189,8 @@
 
         await db.collection('cases').doc(targetCase.id).set(targetCase);
         loadDataFromCloud();
-        alert(`केस #${targetCase.caseNo} का व्यक्तिगत पोस्टिंग सफलतापूर्वक सेव हो गया!`);
-        loadBulkLogCases(); // Refresh logbook list
+        alert(`Case #${targetCase.caseNo} single posting saved successfully!`);
+        loadBulkLogCases();
       }
     }
 
@@ -1858,6 +2203,9 @@
 
       let successCount = 0;
       for (const card of cards) {
+        const chk = card.querySelector('.logbook-select-chk');
+        if (chk && !chk.checked) continue;
+
         const caseId = card.querySelector('.bulk-case-id').value;
         const notes = card.querySelector('.bulk-notes').value.trim();
         const nextDate = card.querySelector('.bulk-next-date').value;
@@ -1891,7 +2239,7 @@
 
       loadDataFromCloud();
       closeBulkLogModal();
-      alert(`सफलतापूर्वक ${successCount} केसों की बल्क पोस्टिंग सबमिट हो गई!`);
+      alert(`Successfully submitted bulk posting for ${successCount} case(s)!`);
     }
 
     function saveAndRefresh() {
@@ -1907,7 +2255,6 @@
       const search = document.getElementById('search').value.toLowerCase();
       accordionContainer.innerHTML = '';
 
-      // Filter cases according to status and search query
       const filteredCases = cases.filter(c => {
         const status = c.status || statusOptions[0];
         if (currentFilter !== 'All' && status !== currentFilter) {
@@ -1918,7 +2265,6 @@
         return queryStr.includes(search);
       });
 
-      // Group cases by court
       const groupedByCourt = {};
       filteredCases.forEach(c => {
         const courtName = c.court || 'Uncategorized Court';
@@ -1928,11 +2274,10 @@
         groupedByCourt[courtName].push(c);
       });
 
-      // Sort courts alphabetically
       const sortedCourts = Object.keys(groupedByCourt).sort();
 
       if (sortedCourts.length === 0) {
-        accordionContainer.innerHTML = `<p style="text-align: center; color: #64748b; padding: 1rem;">कोई केस नहीं मिला।</p>`;
+        accordionContainer.innerHTML = `<p style="text-align: center; color: #64748b; padding: 1rem;">No cases found.</p>`;
         return;
       }
 
@@ -1941,7 +2286,7 @@
         courtCases.sort((a, b) => new Date(b.nextDate) - new Date(a.nextDate));
 
         const groupDiv = document.createElement('div');
-        groupDiv.className = 'court-accordion-group'; // Default closed (collapse mode)
+        groupDiv.className = 'court-accordion-group';
 
         let tableRowsHtml = '';
         courtCases.forEach(c => {
@@ -1995,7 +2340,6 @@
       });
     }
 
-    // FIXED TOGGLE ACCORDION FUNCTION
     function toggleAccordion(headerEl) {
       const groupDiv = headerEl.parentElement;
       groupDiv.classList.toggle('expanded');
@@ -2078,7 +2422,7 @@
       document.getElementById('calendarModalTitle').innerText = `Cause List Summary — ${dateStr}`;
 
       if (dayCases.length === 0) {
-        container.innerHTML = `<p>${dateStr} के लिए कोई केस नहीं है।</p>`;
+        container.innerHTML = `<p>No cases for ${dateStr}.</p>`;
       } else {
         let tableHtml = `
           <table>
@@ -2140,7 +2484,7 @@
       timeline.innerHTML = '';
 
       if (!c.history || c.history.length === 0) {
-        timeline.innerHTML = '<p style="color:#64748b; font-size:0.85rem;">कोई पिछला हियरिंग रिकॉर्ड नहीं है।</p>';
+        timeline.innerHTML = '<p style="color:#64748b; font-size:0.85rem;">No previous hearing records.</p>';
       } else {
         const mappedHistory = c.history.map((h, originalIndex) => ({ ...h, originalIndex }));
         mappedHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -2189,7 +2533,7 @@
     }
 
     async function deleteHearing(caseId, historyIndex) {
-      if (confirm('क्या आप वाकई इस हियरिंग एंट्री को हटाना चाहते हैं?')) {
+      if (confirm('Are you sure you want to delete this hearing entry?')) {
         const targetCase = cases.find(c => c.id === caseId);
         if (targetCase && targetCase.history) {
           targetCase.history.splice(historyIndex, 1);
@@ -2218,7 +2562,7 @@
       const toDate = document.getElementById('feeToDate').value;
 
       if (!fromDate || !toDate) {
-        alert("कृपया 'From Date' और 'To Date' दोनों चुनें।");
+        alert("Please select both 'From Date' and 'To Date'.");
         return;
       }
 
@@ -2257,7 +2601,7 @@
       feeTbody.innerHTML = '';
 
       if (feeList.length === 0) {
-        feeTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">इस तारीख के दायरे में कोई रिकॉर्ड नहीं मिला।</td></tr>';
+        feeTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No records found within date range.</td></tr>';
       } else {
         feeList.sort((a, b) => new Date(b.date) - new Date(a.date));
         feeList.forEach(item => {
@@ -2331,7 +2675,7 @@
     }
 
     function deleteCase(id) {
-      if (confirm('क्या आप इस केस और इसकी सभी जानकारी को हटाना चाहते हैं?')) {
+      if (confirm('Are you sure you want to delete this case and all its data?')) {
         deleteCaseFromCloud(id);
       }
     }
@@ -2365,7 +2709,7 @@
           `;
         }).join('');
       } else {
-        historyRows = '<tr><td colspan="6" style="text-align:center;">कोई हियरिंग इतिहास नहीं है।</td></tr>';
+        historyRows = '<tr><td colspan="6" style="text-align:center;">No hearing history available.</td></tr>';
       }
 
       printWindow.document.write(`
@@ -2436,18 +2780,18 @@
 
     function printSpecificDateCaseList2Col() {
       const defaultDate = new Date().toISOString().split('T')[0];
-      const targetDate = prompt("प्रिंट करने के लिए तारीख दर्ज करें (YYYY-MM-DD):", defaultDate);
+      const targetDate = prompt("Enter date to print (YYYY-MM-DD):", defaultDate);
 
       if (!targetDate) return;
       if (!/^\d{4}-\d{2}-\d{2}$/.test(targetDate)) {
-        alert("अमान्य तिथि प्रारूप। कृपया YYYY-MM-DD format का उपयोग करें।");
+        alert("Invalid date format. Please use YYYY-MM-DD format.");
         return;
       }
 
       const specificCases = cases.filter(c => c.nextDate === targetDate && (c.status === statusOptions[0] || !c.status));
 
       if (specificCases.length === 0) {
-        alert(`चयनित तिथि (${targetDate}) के लिए कोई केस शेड्यूल नहीं है।`);
+        alert(`No cases scheduled for selected date (${targetDate}).`);
         return;
       }
 
@@ -2466,9 +2810,10 @@
         
         let caseListHTML = '';
         courtCases.forEach((c, index) => {
+          const causeSl = c.causeNo || (index + 1);
           caseListHTML += `
             <div class="case-item">
-              <span class="case-num">#${index + 1}</span>
+              <span class="case-num">#${causeSl}</span>
               <div class="case-details">
                 <div class="parties-title">${c.parties}</div>
                 <div class="case-meta">Case No: ${c.caseNo} ${c.stage ? `| Stage: ${c.stage}` : ''} | Client: ${getClientPlainText(c)}</div>
@@ -2495,21 +2840,103 @@
         <head>
           <title>Categorized Case List - ${targetDate}</title>
           <style>
-            @page { size: A4 portrait; margin: 10mm; }
-            body { font-family: 'Segoe UI', Tahoma, sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: 10px !important; }
-            .header { border-bottom: 2px solid #0f172a; padding-bottom: 4px; margin-bottom: 10px; }
-            .header h1 { font-size: 12px; margin: 0 0 2px 0; text-transform: uppercase; }
-            .header small { font-size: 10px; color: #475569; }
-            .court-grid { column-count: 2; column-gap: 12px; column-fill: auto; }
-            .court-card-cell { break-inside: avoid; border: 1px solid #94a3b8; border-radius: 4px; margin-bottom: 8px; background: #fff; }
-            .court-header-badge { background-color: #1e293b; color: #fff; font-weight: bold; font-size: 10px; padding: 4px 8px; border-bottom: 1px solid #0f172a; }
-            .court-cases-body { padding: 4px 6px; }
-            .case-item { display: flex; gap: 6px; align-items: flex-start; padding: 4px 0; border-bottom: 1px dashed #cbd5e1; }
-            .case-item:last-child { border-bottom: none; }
-            .case-num { background-color: #0f766e; color: #fff; font-weight: bold; font-size: 10px; padding: 1px 4px; border-radius: 2px; }
-            .parties-title { font-weight: 600; font-size: 10px; color: #0f172a; }
-            .case-meta { font-size: 10px; color: #64748b; }
-            @media print { button { display: none; } }
+            @page { 
+              size: A4 portrait; 
+              margin: 10mm; 
+            }
+            body { 
+              font-family: 'Segoe UI', Tahoma, sans-serif; 
+              color: #0f172a; 
+              margin: 0; 
+              padding: 0; 
+              font-size: 10px !important; 
+            }
+            .header { 
+              border-bottom: 2px solid #0f172a; 
+              padding-bottom: 4px; 
+              margin-bottom: 10px; 
+            }
+            .header h1 { 
+              font-size: 12px; 
+              margin: 0 0 2px 0; 
+              text-transform: uppercase; 
+            }
+            .header small { 
+              font-size: 10px; 
+              color: #475569; 
+            }
+
+            .court-grid { 
+              column-count: 2; 
+              column-gap: 12px; 
+              column-fill: auto;
+              height: auto;
+            }
+
+            .court-card-cell { 
+              break-inside: avoid;
+              page-break-inside: avoid;
+              border: 1px solid #94a3b8; 
+              border-radius: 4px; 
+              margin-bottom: 8px; 
+              background: #fff; 
+              display: inline-block;
+              width: 100%;
+            }
+
+            .court-header-badge { 
+              background-color: #1e293b; 
+              color: #fff; 
+              font-weight: bold; 
+              font-size: 10px; 
+              padding: 4px 8px; 
+              border-bottom: 1px solid #0f172a; 
+            }
+
+            .court-cases-body { 
+              padding: 4px 6px; 
+            }
+
+            .case-item { 
+              display: flex; 
+              gap: 6px; 
+              align-items: flex-start; 
+              padding: 4px 0; 
+              border-bottom: 1px dashed #cbd5e1; 
+              break-inside: avoid;
+              page-break-inside: avoid;
+            }
+
+            .case-item:last-child { 
+              border-bottom: none; 
+            }
+
+            .case-num { 
+              background-color: #0f766e; 
+              color: #fff; 
+              font-weight: bold; 
+              font-size: 10px; 
+              padding: 1px 4px; 
+              border-radius: 2px; 
+            }
+
+            .parties-title { 
+              font-weight: 600; 
+              font-size: 10px; 
+              color: #0f172a; 
+            }
+
+            .case-meta { 
+              font-size: 10px; 
+              color: #64748b; 
+            }
+
+            @media print { 
+              button { display: none; } 
+              .court-grid {
+                column-fill: auto;
+              }
+            }
           </style>
         </head>
         <body>
@@ -2529,11 +2956,11 @@
 
     function printSpecificDateCases() {
       const defaultDate = new Date().toISOString().split('T')[0];
-      const selectedDate = prompt("Hearing date enter करें (YYYY-MM-DD):", defaultDate);
+      const selectedDate = prompt("Enter hearing date (YYYY-MM-DD):", defaultDate);
 
       if (!selectedDate) return;
       if (!/^\d{4}-\d{2}-\d{2}$/.test(selectedDate)) {
-        alert("अमान्य प्रारूप।");
+        alert("Invalid format.");
         return;
       }
       generateCauseListPrint(selectedDate);
@@ -2543,7 +2970,7 @@
       const filteredCases = cases.filter(c => c.nextDate === targetDate && (c.status === statusOptions[0] || !c.status));
 
       if (filteredCases.length === 0) {
-        alert(`चयनित तिथि (${targetDate}) के लिए कोई केस नहीं मिला।`);
+        alert(`No cases found for selected date (${targetDate}).`);
         return;
       }
 
@@ -2623,7 +3050,7 @@
         try {
           const importedCases = JSON.parse(event.target.result);
           if (Array.isArray(importedCases)) {
-            if (confirm(`बैकअप से कुल ${importedCases.length} केस मिले हैं। क्या आप इन्हें क्लाउड पर रीस्टोर करना चाहते हैं?`)) {
+            if (confirm(`Found ${importedCases.length} case(s) in backup. Restore to cloud?`)) {
               importedCases.forEach(async (c) => {
                 if (c.id) {
                   await db.collection('cases').doc(c.id).set(c);
@@ -2631,14 +3058,14 @@
               });
               setTimeout(() => {
                 loadDataFromCloud();
-                alert("डेटा सफलतापूर्वक रीस्टोर हो गया!");
+                alert("Data restored successfully!");
               }, 1000);
             }
           } else {
-            alert("अमान्य JSON फ़ाइल प्रारूप।");
+            alert("Invalid JSON file format.");
           }
         } catch (err) {
-          alert("फ़ाइल पार्स करने में त्रुटि: " + err.message);
+          alert("Error parsing file: " + err.message);
         }
       };
       reader.readAsText(file);
@@ -2646,18 +3073,18 @@
 
     function exportToExcel() {
       let csvContent = "data:text/csv;charset=utf-8,Case ID,Status,Case No,Court,Parties,Client Name,Client Phone,Next Date,Stage\n";
-
+      
       cases.forEach(c => {
         const row = [
-          `"${c.id || ''}"`,
-          `"${c.status || 'Ongoing'}"`,
-          `"${c.caseNo || ''}"`,
-          `"${c.court || ''}"`,
-          `"${(c.parties || '').replace(/"/g, '""')}"`,
-          `"${c.clientName || ''}"`,
+          `"${c.id}"`,
+          `"${c.status || statusOptions[0]}"`,
+          `"${c.caseNo}"`,
+          `"${c.court}"`,
+          `"${c.parties.replace(/"/g, '""')}"`,
+          `"${c.clientName || c.client || ''}"`,
           `"${c.clientPhone || ''}"`,
-          `"${c.nextDate || ''}"`,
-          `"${(c.stage || '').replace(/"/g, '""')}"`
+          `"${c.nextDate}"`,
+          `"${c.stage || ''}"`
         ];
         csvContent += row.join(",") + "\n";
       });
@@ -2665,11 +3092,17 @@
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement("a");
       link.setAttribute("href", encodedUri);
-      link.setAttribute("download", `Advocate_Cases_Export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute("download", `Advocate_Diary_Export_${new Date().toISOString().split('T')[0]}.csv`);
       document.body.appendChild(link);
       link.click();
       link.remove();
     }
+
+    window.onload = function() {
+      setDefaultDate();
+      renderStatusDropdown();
+      renderCourtDropdown();
+    };
   </script>
 </body>
 </html>
