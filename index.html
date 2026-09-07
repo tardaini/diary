@@ -801,17 +801,27 @@
 
   <!-- Bulk Update Log Book Modal -->
   <div id="bulkLogModal" class="modal">
-    <div class="modal-content" style="max-width: 900px;">
+    <div class="modal-content" style="max-width: 950px;">
       <h2>📖 Update Log Book — Today's Cases</h2>
-      <div style="display: flex; gap: 0.8rem; align-items: center; margin-bottom: 1rem; flex-wrap: wrap;">
-        <label style="margin:0;" for="bulkLogDate">Target Hearing Date:</label>
-        <input type="date" id="bulkLogDate" style="width: auto; margin: 0;" onchange="loadBulkLogCases()">
+      <div style="display: flex; gap: 0.8rem; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; justify-content: space-between;">
+        <div style="display: flex; gap: 0.8rem; align-items: center;">
+          <label style="margin:0;" for="bulkLogDate">Target Hearing Date:</label>
+          <input type="date" id="bulkLogDate" style="width: auto; margin: 0;" onchange="loadBulkLogCases()">
+        </div>
+        <div style="flex: 1; max-width: 350px;">
+          <input type="text" id="bulkLogSearch" placeholder="🔍 Search case number, parties, client..." onkeyup="loadBulkLogCases()" style="margin: 0; padding: 0.45rem;">
+        </div>
+      </div>
+
+      <div class="expand-collapse-controls" style="margin-bottom: 0.5rem;">
+        <button type="button" class="btn-sm-ctrl" onclick="expandAllLogbookCourts()">📂 Expand All Courts</button>
+        <button type="button" class="btn-sm-ctrl" onclick="collapseAllLogbookCourts()">📁 Collapse All Courts</button>
       </div>
 
       <form id="bulkLogForm" onsubmit="submitBulkLog(event)">
-        <div id="bulkLogCasesContainer"></div>
+        <div id="bulkLogCasesContainer" style="max-height: 450px; overflow-y: auto; padding-right: 4px;"></div>
         <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-          <button type="submit" id="bulkSubmitBtn" style="background-color: #16a34a; margin-top: 0;">Submit & Post All to Next Hearing</button>
+          <button type="submit" id="bulkSubmitBtn" style="background-color: #16a34a; margin-top: 0;">Submit & Post All to Next Hearing (Bulk Posting)</button>
           <button type="button" class="btn-secondary" style="margin-top: 0; width: 100%;" onclick="closeBulkLogModal()">Cancel</button>
         </div>
       </form>
@@ -1650,6 +1660,7 @@
     function openBulkLogModal() {
       const todayStr = new Date().toISOString().split('T')[0];
       document.getElementById('bulkLogDate').value = todayStr;
+      document.getElementById('bulkLogSearch').value = '';
       loadBulkLogCases();
       document.getElementById('bulkLogModal').style.display = 'flex';
     }
@@ -1660,6 +1671,7 @@
 
     function loadBulkLogCases() {
       const dateVal = document.getElementById('bulkLogDate').value;
+      const searchQuery = document.getElementById('bulkLogSearch').value.toLowerCase().trim();
       const container = document.getElementById('bulkLogCasesContainer');
       container.innerHTML = '';
 
@@ -1668,52 +1680,150 @@
         return;
       }
 
-      const matchingCases = cases.filter(c => c.nextDate === dateVal && (c.status === statusOptions[0] || !c.status));
+      let matchingCases = cases.filter(c => c.nextDate === dateVal && (c.status === statusOptions[0] || !c.status));
+
+      if (searchQuery) {
+        matchingCases = matchingCases.filter(c => {
+          const combined = `${c.caseNo} ${c.parties} ${c.clientName || ''} ${c.clientPhone || ''} ${c.stage || ''}`.toLowerCase();
+          return combined.includes(searchQuery);
+        });
+      }
 
       if (matchingCases.length === 0) {
-        container.innerHTML = `<p style="color:#64748b; font-size:0.9rem;">${dateVal} के लिए कोई सक्रिय केस सुनवाई सूचीबद्ध नहीं है।</p>`;
+        container.innerHTML = `<p style="color:#64748b; font-size:0.9rem; text-align:center; padding: 1rem;">${dateVal} के लिए कोई सक्रिय केस सुनवाई सूचीबद्ध नहीं है।</p>`;
         document.getElementById('bulkSubmitBtn').style.display = 'none';
         return;
       }
 
       document.getElementById('bulkSubmitBtn').style.display = 'block';
 
-      matchingCases.forEach((c, idx) => {
-        const card = document.createElement('div');
-        card.className = 'logbook-case-card';
-        card.innerHTML = `
-          <input type="hidden" class="bulk-case-id" value="${c.id}">
-          <div style="font-weight: bold; font-size: 0.95rem; color: var(--primary);">
-            #${idx + 1} — ${c.caseNo} (${c.parties})
-          </div>
-          <div style="font-size:0.8rem; color:#64748b; margin-bottom: 0.4rem;">
-            Court: ${c.court} | Client: ${getClientPlainText(c)}
-          </div>
+      // Group cases by court for court-wise view inside logbook
+      const groupedByCourt = {};
+      matchingCases.forEach(c => {
+        const courtName = c.court || 'Uncategorized Court';
+        if (!groupedByCourt[courtName]) {
+          groupedByCourt[courtName] = [];
+        }
+        groupedByCourt[courtName].push(c);
+      });
 
-          <label>Proceedings / Remarks</label>
-          <textarea class="bulk-notes" rows="2" placeholder="कार्यवाही दर्ज करें..." required></textarea>
+      Object.keys(groupedByCourt).sort().forEach(courtName => {
+        const courtCases = groupedByCourt[courtName];
+        
+        let cardsHtml = '';
+        courtCases.forEach((c, idx) => {
+          cardsHtml += `
+            <div class="logbook-case-card" id="log_card_${c.id}">
+              <input type="hidden" class="bulk-case-id" value="${c.id}">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
+                <div style="font-weight: bold; font-size: 0.95rem; color: var(--primary);">
+                  #${idx + 1} — ${c.caseNo} (${c.parties})
+                </div>
+                <button type="button" class="btn-sm" style="background-color: #0f766e; margin-top:0;" onclick="submitIndividualLog('${c.id}')">💾 Save Individual Posting</button>
+              </div>
+              <div style="font-size:0.8rem; color:#64748b; margin-bottom: 0.4rem;">
+                Court: ${c.court} | Client: ${getClientPlainText(c)}
+              </div>
 
-          <div class="logbook-grid">
-            <div>
-              <label>Next Hearing Date</label>
-              <input type="date" class="bulk-next-date" required>
+              <label>Proceedings / Remarks</label>
+              <textarea class="bulk-notes" rows="2" placeholder="कार्यवाही दर्ज करें..." required></textarea>
+
+              <div class="logbook-grid">
+                <div>
+                  <label>Next Hearing Date</label>
+                  <input type="date" class="bulk-next-date" required>
+                </div>
+                <div>
+                  <label>Updated Stage</label>
+                  <input type="text" class="bulk-stage" value="${c.stage || ''}" placeholder="e.g. Next Evidence">
+                </div>
+                <div>
+                  <label>Hearing Fee</label>
+                  <input type="number" class="bulk-fee" min="0" step="any" placeholder="0">
+                </div>
+                <div>
+                  <label>Other Charge</label>
+                  <input type="number" class="bulk-other-fee" min="0" step="any" placeholder="0">
+                </div>
+              </div>
             </div>
-            <div>
-              <label>Updated Stage</label>
-              <input type="text" class="bulk-stage" value="${c.stage || ''}" placeholder="e.g. Next Evidence">
-            </div>
-            <div>
-              <label>Hearing Fee</label>
-              <input type="number" class="bulk-fee" min="0" step="any" placeholder="0">
-            </div>
-            <div>
-              <label>Other Charge</label>
-              <input type="number" class="bulk-other-fee" min="0" step="any" placeholder="0">
-            </div>
+          `;
+        });
+
+        const accordionGroup = document.createElement('div');
+        accordionGroup.className = 'court-accordion-group expanded'; // Expanded by default in logbook
+        accordionGroup.innerHTML = `
+          <div class="court-accordion-header" onclick="toggleAccordion(this)">
+            <span>🏛️ ${courtName} <span class="badge" style="background:#0284c7; color:white;">${courtCases.length}</span></span>
+            <span class="accordion-arrow">▼</span>
+          </div>
+          <div class="court-accordion-content" style="display: block;">
+            ${cardsHtml}
           </div>
         `;
-        container.appendChild(card);
+
+        container.appendChild(accordionGroup);
       });
+    }
+
+    function expandAllLogbookCourts() {
+      document.querySelectorAll('#bulkLogCasesContainer .court-accordion-group').forEach(group => {
+        group.classList.add('expanded');
+        group.querySelector('.court-accordion-content').style.display = 'block';
+      });
+    }
+
+    function collapseAllLogbookCourts() {
+      document.querySelectorAll('#bulkLogCasesContainer .court-accordion-group').forEach(group => {
+        group.classList.remove('expanded');
+        group.querySelector('.court-accordion-content').style.display = 'none';
+      });
+    }
+
+    async function submitIndividualLog(caseId) {
+      const card = document.getElementById(`log_card_${caseId}`);
+      if (!card) return;
+
+      const targetDate = document.getElementById('bulkLogDate').value;
+      const notes = card.querySelector('.bulk-notes').value.trim();
+      const nextDate = card.querySelector('.bulk-next-date').value;
+      const stage = card.querySelector('.bulk-stage').value;
+      const fee = parseFloat(card.querySelector('.bulk-fee').value) || 0;
+      const otherFee = parseFloat(card.querySelector('.bulk-other-fee').value) || 0;
+
+      if (!notes) {
+        alert("कृपया कार्यवाही (Proceedings / Remarks) दर्ज करें।");
+        card.querySelector('.bulk-notes').focus();
+        return;
+      }
+      if (!nextDate) {
+        alert("कृपया अगली सुनवाई की तारीख चुनें।");
+        card.querySelector('.bulk-next-date').focus();
+        return;
+      }
+
+      const targetCase = cases.find(c => c.id === caseId);
+      if (targetCase) {
+        const logEntry = {
+          date: targetDate,
+          stage: stage,
+          notes: notes,
+          assignedNextDate: nextDate,
+          fee: fee,
+          otherFee: otherFee
+        };
+
+        if (!targetCase.history) targetCase.history = [];
+        targetCase.history.push(logEntry);
+
+        targetCase.nextDate = nextDate;
+        if (stage) targetCase.stage = stage;
+
+        await db.collection('cases').doc(targetCase.id).set(targetCase);
+        loadDataFromCloud();
+        alert(`केस #${targetCase.caseNo} का व्यक्तिगत पोस्टिंग सफलतापूर्वक सेव हो गया!`);
+        loadBulkLogCases(); // Refresh logbook list
+      }
     }
 
     async function submitBulkLog(e) {
@@ -1723,38 +1833,42 @@
 
       if (cards.length === 0) return;
 
+      let successCount = 0;
       for (const card of cards) {
         const caseId = card.querySelector('.bulk-case-id').value;
-        const notes = card.querySelector('.bulk-notes').value;
+        const notes = card.querySelector('.bulk-notes').value.trim();
         const nextDate = card.querySelector('.bulk-next-date').value;
         const stage = card.querySelector('.bulk-stage').value;
         const fee = parseFloat(card.querySelector('.bulk-fee').value) || 0;
         const otherFee = parseFloat(card.querySelector('.bulk-other-fee').value) || 0;
 
-        const targetCase = cases.find(c => c.id === caseId);
-        if (targetCase) {
-          const logEntry = {
-            date: targetDate,
-            stage: stage,
-            notes: notes,
-            assignedNextDate: nextDate,
-            fee: fee,
-            otherFee: otherFee
-          };
+        if (notes && nextDate) {
+          const targetCase = cases.find(c => c.id === caseId);
+          if (targetCase) {
+            const logEntry = {
+              date: targetDate,
+              stage: stage,
+              notes: notes,
+              assignedNextDate: nextDate,
+              fee: fee,
+              otherFee: otherFee
+            };
 
-          if (!targetCase.history) targetCase.history = [];
-          targetCase.history.push(logEntry);
+            if (!targetCase.history) targetCase.history = [];
+            targetCase.history.push(logEntry);
 
-          targetCase.nextDate = nextDate;
-          if (stage) targetCase.stage = stage;
+            targetCase.nextDate = nextDate;
+            if (stage) targetCase.stage = stage;
 
-          await db.collection('cases').doc(targetCase.id).set(targetCase);
+            await db.collection('cases').doc(targetCase.id).set(targetCase);
+            successCount++;
+          }
         }
       }
 
       loadDataFromCloud();
       closeBulkLogModal();
-      alert('सभी सुनवाई के लॉग सफलतापूर्वक सबमिट हो गए!');
+      alert(`सफलतापूर्वक ${successCount} केसों की बल्क पोस्टिंग सबमिट हो गई!`);
     }
 
     function saveAndRefresh() {
