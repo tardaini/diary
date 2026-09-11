@@ -492,13 +492,13 @@
     }
     .logbook-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
       gap: 0.5rem;
       margin-top: 0.4rem;
     }
-    @media (max-width: 768px) {
+    @media (max-width: 900px) {
       .logbook-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
       }
     }
 
@@ -1099,7 +1099,29 @@
 
     async function saveCaseToCloud(caseData) {
       try {
-        await db.collection('cases').doc(caseData.id).set(caseData);
+        const cleanData = {
+          id: caseData.id || "",
+          status: caseData.status || "",
+          caseNo: caseData.caseNo || "",
+          court: caseData.court || "",
+          parties: caseData.parties || "",
+          clientName: caseData.clientName || "",
+          clientPhone: caseData.clientPhone || "",
+          client: caseData.client || "",
+          nextDate: caseData.nextDate || "",
+          stage: caseData.stage || "",
+          causeNo: caseData.causeNo !== undefined && caseData.causeNo !== null ? String(caseData.causeNo) : "",
+          history: Array.isArray(caseData.history) ? caseData.history.map(h => ({
+            date: h.date || "",
+            stage: h.stage || "",
+            notes: h.notes || "",
+            assignedNextDate: h.assignedNextDate || "",
+            fee: typeof h.fee === 'number' ? h.fee : 0,
+            otherFee: typeof h.otherFee === 'number' ? h.otherFee : 0
+          })) : []
+        };
+
+        await db.collection('cases').doc(cleanData.id).set(cleanData);
         loadDataFromCloud();
       } catch (error) {
         alert("Error saving to cloud: " + error.message);
@@ -1395,7 +1417,7 @@
       const targetCase = cases.find(c => c.id === caseId);
       if (targetCase) {
         targetCase.causeNo = value.trim();
-        await db.collection('cases').doc(caseId).set(targetCase);
+        await saveCaseToCloud(targetCase);
       }
     }
 
@@ -1741,7 +1763,7 @@
           targetCase.history.push(forwardLog);
           targetCase.nextDate = targetDate;
 
-          await db.collection('cases').doc(targetCase.id).set(targetCase);
+          await saveCaseToCloud(targetCase);
         }
       }
 
@@ -1801,11 +1823,12 @@
           courtOptions[index] = newCourtVal;
         }
 
-        cases.forEach(c => {
+        for (const c of cases) {
           if (c.court === oldCourtVal) {
             c.court = newCourtVal;
+            await saveCaseToCloud(c);
           }
-        });
+        }
 
         await saveCourtOptionsToCloud();
         saveAndRefresh();
@@ -1838,11 +1861,12 @@
       if (confirm(`Are you sure you want to delete "${selectedValue}"?`)) {
         courtOptions = courtOptions.filter(c => c !== selectedValue);
         
-        cases.forEach(c => {
+        for (const c of cases) {
           if (c.court === selectedValue) {
             c.court = '';
+            await saveCaseToCloud(c);
           }
-        });
+        }
 
         await saveCourtOptionsToCloud();
         saveAndRefresh();
@@ -1901,11 +1925,12 @@
           statusOptions[index] = newStatusVal;
         }
 
-        cases.forEach(c => {
+        for (const c of cases) {
           if (c.status === oldStatusVal) {
             c.status = newStatusVal;
+            await saveCaseToCloud(c);
           }
-        });
+        }
 
         await saveStatusOptionsToCloud();
         saveAndRefresh();
@@ -1943,11 +1968,12 @@
       if (confirm(`Are you sure you want to delete status "${selectedValue}"?`)) {
         statusOptions = statusOptions.filter(s => s !== selectedValue);
         
-        cases.forEach(c => {
+        for (const c of cases) {
           if (c.status === selectedValue) {
             c.status = statusOptions[0];
+            await saveCaseToCloud(c);
           }
-        });
+        }
 
         if (currentFilter === selectedValue) {
           currentFilter = 'All';
@@ -1972,7 +1998,7 @@
 
       const matches = cases.filter(c => {
         if (currentCaseId && c.id === currentCaseId) return false;
-        return c.parties.toLowerCase().includes(partyInput);
+        return c.parties && c.parties.toLowerCase().includes(partyInput);
       });
 
       if (matches.length > 0) {
@@ -2018,8 +2044,8 @@
         client: `${clientName} ${clientPhone ? '(' + clientPhone + ')' : ''}`.trim(),
         nextDate: document.getElementById('nextDate').value,
         stage: document.getElementById('stage').value,
-        causeNo: existingCase ? existingCase.causeNo : '',
-        history: existingCase ? existingCase.history : []
+        causeNo: existingCase && existingCase.causeNo !== undefined ? existingCase.causeNo : "",
+        history: existingCase && existingCase.history ? existingCase.history : []
       };
 
       saveCaseToCloud(caseData);
@@ -2114,6 +2140,12 @@
         
         let cardsHtml = '';
         courtCases.forEach((c, idx) => {
+          let statusOptionsHtml = '';
+          statusOptions.forEach(s => {
+            const isSelected = (c.status || statusOptions[0]) === s ? 'selected' : '';
+            statusOptionsHtml += `<option value="${s}" ${isSelected}>${s}</option>`;
+          });
+
           cardsHtml += `
             <div class="logbook-case-card" id="log_card_${c.id}">
               <input type="hidden" class="bulk-case-id" value="${c.id}">
@@ -2137,6 +2169,12 @@
               <textarea class="bulk-notes" rows="2" placeholder="Enter proceedings..." required></textarea>
 
               <div class="logbook-grid">
+                <div>
+                  <label>Case Status</label>
+                  <select class="bulk-status" required>
+                    ${statusOptionsHtml}
+                  </select>
+                </div>
                 <div>
                   <label>Next Hearing Date</label>
                   <input type="date" class="bulk-next-date" required>
@@ -2229,6 +2267,7 @@
 
       const targetDate = document.getElementById('bulkLogDate').value;
       const notes = card.querySelector('.bulk-notes').value.trim();
+      const newStatus = card.querySelector('.bulk-status').value;
       const nextDate = card.querySelector('.bulk-next-date').value;
       const stage = card.querySelector('.bulk-stage').value;
       const fee = parseFloat(card.querySelector('.bulk-fee').value) || 0;
@@ -2259,11 +2298,11 @@
         if (!targetCase.history) targetCase.history = [];
         targetCase.history.push(logEntry);
 
+        targetCase.status = newStatus;
         targetCase.nextDate = nextDate;
         if (stage) targetCase.stage = stage;
 
-        await db.collection('cases').doc(targetCase.id).set(targetCase);
-        loadDataFromCloud();
+        await saveCaseToCloud(targetCase);
         alert(`Case #${targetCase.caseNo} single posting saved successfully!`);
         loadBulkLogCases();
       }
@@ -2283,6 +2322,7 @@
 
         const caseId = card.querySelector('.bulk-case-id').value;
         const notes = card.querySelector('.bulk-notes').value.trim();
+        const newStatus = card.querySelector('.bulk-status').value;
         const nextDate = card.querySelector('.bulk-next-date').value;
         const stage = card.querySelector('.bulk-stage').value;
         const fee = parseFloat(card.querySelector('.bulk-fee').value) || 0;
@@ -2303,16 +2343,16 @@
             if (!targetCase.history) targetCase.history = [];
             targetCase.history.push(logEntry);
 
+            targetCase.status = newStatus;
             targetCase.nextDate = nextDate;
             if (stage) targetCase.stage = stage;
 
-            await db.collection('cases').doc(targetCase.id).set(targetCase);
+            await saveCaseToCloud(targetCase);
             successCount++;
           }
         }
       }
 
-      loadDataFromCloud();
       closeBulkLogModal();
       alert(`Successfully submitted bulk posting for ${successCount} case(s)!`);
     }
@@ -2541,7 +2581,6 @@
     }
 
     function updateCounts() {
-      const allCount = cases.filter(c => currentFilter === 'All' ? true : (c.status || statusOptions[0]) === currentFilter).length;
       const countAllEl = document.getElementById('count-All');
       if (countAllEl) countAllEl.innerText = cases.length;
 
@@ -2569,12 +2608,12 @@
 
       document.getElementById('caseId').value = targetCase.id;
       renderStatusDropdown(targetCase.status || statusOptions[0]);
-      document.getElementById('caseNo').value = targetCase.caseNo;
-      renderCourtDropdown(targetCase.court);
-      document.getElementById('parties').value = targetCase.parties;
+      document.getElementById('caseNo').value = targetCase.caseNo || '';
+      renderCourtDropdown(targetCase.court || '');
+      document.getElementById('parties').value = targetCase.parties || '';
       document.getElementById('clientName').value = targetCase.clientName || '';
       document.getElementById('clientPhone').value = targetCase.clientPhone || '';
-      document.getElementById('nextDate').value = targetCase.nextDate;
+      document.getElementById('nextDate').value = targetCase.nextDate || '';
       document.getElementById('stage').value = targetCase.stage || '';
 
       document.getElementById('formTitle').innerText = `Edit Case: ${targetCase.caseNo}`;
@@ -2667,8 +2706,7 @@
         const targetCase = cases.find(c => c.id === caseId);
         if (targetCase && targetCase.history) {
           targetCase.history.splice(index, 1);
-          await db.collection('cases').doc(targetCase.id).set(targetCase);
-          loadDataFromCloud();
+          await saveCaseToCloud(targetCase);
           openHistoryModal(caseId);
         }
       }
