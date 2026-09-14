@@ -103,9 +103,44 @@
       align-items: center;
     }
 
+    /* Top Navigation Tabs Bar */
+    .nav-tabs-bar {
+      background-color: #0f172a;
+      padding: 0.5rem 2rem;
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      border-bottom: 2px solid #334155;
+    }
+
+    .nav-tab-btn {
+      background-color: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      padding: 0.45rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      width: auto;
+      margin-top: 0;
+    }
+
+    .nav-tab-btn:hover {
+      background-color: #334155;
+      color: #ffffff;
+    }
+
+    .nav-tab-btn.active {
+      background-color: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
     /* Court Summary Bar Styles */
     .court-summary-bar {
-      background-color: #0f172a;
+      background-color: #1e293b;
       padding: 0.65rem 2rem;
       display: flex;
       align-items: center;
@@ -123,7 +158,7 @@
     }
 
     .court-pill-link {
-      background-color: #1e293b;
+      background-color: #0f172a;
       color: #38bdf8;
       text-decoration: none;
       padding: 0.3rem 0.65rem;
@@ -206,15 +241,6 @@
       max-width: 1300px;
       margin: 1.5rem auto;
       padding: 0 1rem;
-      display: grid;
-      grid-template-columns: 380px 1fr;
-      gap: 1.5rem;
-    }
-
-    @media (max-width: 900px) {
-      .container {
-        grid-template-columns: 1fr;
-      }
     }
 
     .card {
@@ -431,7 +457,7 @@
       padding: 4px 0;
     }
     .calendar-day {
-      min-height: 40px;
+      min-height: 80px;
       background: #f1f5f9;
       border-radius: 4px;
       display: flex;
@@ -628,7 +654,7 @@
     <h1>⚖️ Advocate Diary & Hearing Logs</h1>
     
     <div class="header-btns">
-      <div class="filter-bar" id="filterBarContainer">
+      <div class="filter-bar" id="filterBarContainer" style="display: none;">
         <!-- Dynamically Rendered Status Filter Buttons -->
       </div>
 
@@ -640,6 +666,14 @@
     </div>
   </header>
 
+  <!-- Interactive Top Navigation Tabs Bar -->
+  <div class="nav-tabs-bar">
+    <button class="nav-tab-btn" onclick="switchTab('activeCasesTab', this)">📂 Active Cases & Daily Cause List</button>
+    <button class="nav-tab-btn" onclick="switchTab('registerCaseTab', this)">📝 Register New Case</button>
+    <button class="nav-tab-btn active" onclick="switchTab('calendarTab', this)">📅 Calendar</button>
+    <button class="nav-tab-btn" onclick="switchTab('feeSearchTab', this)">💰 Search Fees Between Dates</button>
+  </div>
+
   <!-- Court/Forum Summary Bar -->
   <div class="court-summary-bar" id="courtSummaryBar">
     <span class="court-summary-title">🏛️ Courts / Forums:</span>
@@ -647,112 +681,105 @@
   </div>
 
   <div class="container">
-    <div>
-      <div class="card">
-        <div class="calendar-header">
-          <button onclick="changeMonth(-1)">&lt; Prev</button>
-          <h3 id="calendarMonthYear">Month Year</h3>
-          <button onclick="changeMonth(1)">Next &gt;</button>
-        </div>
-        <div class="calendar-grid">
-          <div class="calendar-day-head">Sun</div>
-          <div class="calendar-day-head">Mon</div>
-          <div class="calendar-day-head">Tue</div>
-          <div class="calendar-day-head">Wed</div>
-          <div class="calendar-day-head">Thu</div>
-          <div class="calendar-day-head">Fri</div>
-          <div class="calendar-day-head">Sat</div>
-        </div>
-        <div id="calendarDays" class="calendar-grid" style="margin-top: 4px;"></div>
+    <!-- Tab Panes Container -->
+    
+    <!-- 1. Calendar Tab Pane (Default View) -->
+    <div class="card tab-pane" id="calendarTabPane">
+      <div class="calendar-header">
+        <button onclick="changeMonth(-1)">&lt; Prev</button>
+        <h3 id="calendarMonthYear">Month Year</h3>
+        <button onclick="changeMonth(1)">Next &gt;</button>
       </div>
-
-      <div class="card">
-        <h2 id="formTitle">Register New Case</h2>
-        <form id="caseForm">
-          <input type="hidden" id="caseId">
-          
-          <label for="status">Case Status</label>
-          <div class="court-control-wrapper">
-            <select id="status" required></select>
-            <button type="button" class="btn-court-add" onclick="openAddStatusModal()" title="Add New Status Option">+</button>
-            <button type="button" class="btn-court-edit" onclick="openEditStatusModal()" title="Edit Selected Status Option">✎</button>
-            <button type="button" class="btn-court-delete" onclick="deleteSelectedStatus()" title="Delete Selected Status Option">🗑️</button>
-          </div>
-
-          <label for="caseNo">Case Number / CNR</label>
-          <input type="text" id="caseNo" required value="NA" placeholder="e.g. CA/1024/2026">
-
-          <label for="court">Court / Forum & Judge</label>
-          <div class="court-control-wrapper">
-            <select id="court" required></select>
-            <button type="button" class="btn-court-add" onclick="openAddCourtModal()" title="Add New Court/Forum Option">+</button>
-            <button type="button" class="btn-court-edit" onclick="openEditCourtModal()" title="Edit Selected Court Option">✎</button>
-            <button type="button" class="btn-court-delete" onclick="deleteSelectedCourt()" title="Delete Selected Court Option">🗑️</button>
-          </div>
-
-          <div style="display: flex; justify-content: space-between; align-items: flex-end;">
-            <label for="parties" style="margin-top:0.7rem;">Parties (Petitioner vs Respondent)</label>
-            <button type="button" class="btn-translate" onclick="translatePartiesToHindi()">🌐 Translate to Hindi</button>
-          </div>
-          <input type="text" id="parties" required placeholder="e.g. Ramesh Kumar vs. State" oninput="checkDuplicateParties()">
-          
-          <div id="partyAlertBox" class="party-alert"></div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
-            <div>
-              <label for="clientName">Client Name</label>
-              <input type="text" id="clientName" required value="NA" placeholder="e.g. Ramesh Kumar">
-            </div>
-            <div>
-              <label for="clientPhone">Client Phone</label>
-              <input type="tel" id="clientPhone" value="NA" placeholder="e.g. 9876543210">
-            </div>
-          </div>
-
-          <label for="nextDate">First / Next Hearing Date</label>
-          <input type="date" id="nextDate" required>
-
-          <label for="stage">Current Stage</label>
-          <input type="text" id="stage" value="NA" placeholder="e.g. Arguments / Evidence">
-
-          <button type="submit" id="saveBtn">Save Case File</button>
-          <button type="button" class="btn-secondary" style="width:100%; margin-top:0.5rem;" onclick="resetForm()">Clear Form</button>
-        </form>
+      <div class="calendar-grid">
+        <div class="calendar-day-head">Sun</div>
+        <div class="calendar-day-head">Mon</div>
+        <div class="calendar-day-head">Tue</div>
+        <div class="calendar-day-head">Wed</div>
+        <div class="calendar-day-head">Thu</div>
+        <div class="calendar-day-head">Fri</div>
+        <div class="calendar-day-head">Sat</div>
       </div>
-
-      <div class="card">
-        <h2>💰 Search Fees Between Dates</h2>
-        <label for="feeFromDate">From Hearing Date</label>
-        <input type="date" id="feeFromDate">
-
-        <label for="feeToDate">To Hearing Date</label>
-        <input type="date" id="feeToDate">
-
-        <button type="button" style="background-color: #0284c7;" onclick="searchHearingFees()">🔍 Calculate Fees</button>
-        <button type="button" class="btn-secondary" style="width:100%; margin-top:0.5rem;" onclick="resetFeeSearch()">Reset Filter</button>
-
-        <div id="feeSummaryBox" class="fee-summary-card" style="display:none;">
-          <div><strong>Filtered Sum Total:</strong></div>
-          <div style="margin-top: 0.3rem;">Hearing Fees: <strong><span id="totalFeeAmount">0</span></strong></div>
-          <div>Stationary & Others Chrg.: <strong><span id="totalOtherFeeAmount">0</span></strong></div>
-        </div>
-      </div>
+      <div id="calendarDays" class="calendar-grid" style="margin-top: 4px;"></div>
     </div>
 
-    <div>
-      <div class="card">
-        <h2 id="tableTitle">Active Cases & Daily Cause List</h2>
-        <input type="text" id="search" placeholder="🔍 Search by Case No, Client, Phone, Court, or Date..." onkeyup="renderCases()">
+    <!-- 2. Register New Case Tab Pane -->
+    <div class="card tab-pane" id="registerCaseTabPane" style="display:none;">
+      <h2 id="formTitle">Register New Case</h2>
+      <form id="caseForm">
+        <input type="hidden" id="caseId">
         
-        <div class="expand-collapse-controls" style="margin-top: 0.8rem;">
-          <button type="button" class="btn-sm-ctrl" onclick="expandAllCourts()">📂 Expand All Courts</button>
-          <button type="button" class="btn-sm-ctrl" onclick="collapseAllCourts()">📁 Collapse All Courts</button>
+        <label for="status">Case Status</label>
+        <div class="court-control-wrapper">
+          <select id="status" required></select>
+          <button type="button" class="btn-court-add" onclick="openAddStatusModal()" title="Add New Status Option">+</button>
+          <button type="button" class="btn-court-edit" onclick="openEditStatusModal()" title="Edit Selected Status Option">✎</button>
+          <button type="button" class="btn-court-delete" onclick="deleteSelectedStatus()" title="Delete Selected Status Option">🗑️</button>
         </div>
 
-        <div id="courtAccordionContainer" style="margin-top: 0.5rem;"></div>
+        <label for="caseNo">Case Number / CNR</label>
+        <input type="text" id="caseNo" required value="NA" placeholder="e.g. CA/1024/2026">
+
+        <label for="court">Court / Forum & Judge</label>
+        <div class="court-control-wrapper">
+          <select id="court" required></select>
+          <button type="button" class="btn-court-add" onclick="openAddCourtModal()" title="Add New Court/Forum Option">+</button>
+          <button type="button" class="btn-court-edit" onclick="openEditCourtModal()" title="Edit Selected Court Option">✎</button>
+          <button type="button" class="btn-court-delete" onclick="deleteSelectedCourt()" title="Delete Selected Court Option">🗑️</button>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+          <label for="parties" style="margin-top:0.7rem;">Parties (Petitioner vs Respondent)</label>
+          <button type="button" class="btn-translate" onclick="translatePartiesToHindi()">🌐 Translate to Hindi</button>
+        </div>
+        <input type="text" id="parties" required placeholder="e.g. Ramesh Kumar vs. State" oninput="checkDuplicateParties()">
+        
+        <div id="partyAlertBox" class="party-alert"></div>
+
+        <!-- Newly Added Dispute Property Field -->
+        <label for="disputeProperty">Dispute Property</label>
+        <input type="text" id="disputeProperty" value="NA" placeholder="e.g. Land Survey No. 45/2 / Commercial Complex">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+          <div>
+            <label for="clientName">Client Name</label>
+            <input type="text" id="clientName" required value="NA" placeholder="e.g. Ramesh Kumar">
+          </div>
+          <div>
+            <label for="clientPhone">Client Phone</label>
+            <input type="tel" id="clientPhone" value="NA" placeholder="e.g. 9876543210">
+          </div>
+        </div>
+
+        <label for="nextDate">First / Next Hearing Date</label>
+        <input type="date" id="nextDate" required>
+
+        <label for="stage">Current Stage</label>
+        <input type="text" id="stage" value="NA" placeholder="e.g. Arguments / Evidence">
+
+        <button type="submit" id="saveBtn">Save Case File</button>
+        <button type="button" class="btn-secondary" style="width:100%; margin-top:0.5rem;" onclick="resetForm()">Clear Form</button>
+      </form>
+    </div>
+
+    <!-- 3. Search Fees Between Dates Tab Pane -->
+    <div class="card tab-pane" id="feeSearchTabPane" style="display:none;">
+      <h2>💰 Search Fees Between Dates</h2>
+      <label for="feeFromDate">From Hearing Date</label>
+      <input type="date" id="feeFromDate">
+
+      <label for="feeToDate">To Hearing Date</label>
+      <input type="date" id="feeToDate">
+
+      <button type="button" style="background-color: #0284c7;" onclick="searchHearingFees()">🔍 Calculate Fees</button>
+      <button type="button" class="btn-secondary" style="width:100%; margin-top:0.5rem;" onclick="resetFeeSearch()">Reset Filter</button>
+
+      <div id="feeSummaryBox" class="fee-summary-card" style="display:none;">
+        <div><strong>Filtered Sum Total:</strong></div>
+        <div style="margin-top: 0.3rem;">Hearing Fees: <strong><span id="totalFeeAmount">0</span></strong></div>
+        <div>Stationary & Others Chrg.: <strong><span id="totalOtherFeeAmount">0</span></strong></div>
       </div>
 
-      <div id="feeResultsCard" class="card" style="display:none;">
+      <div id="feeResultsCard" class="card" style="display:none; margin-top: 1.5rem;">
         <h2>Hearing Fee Logs Between Selected Dates</h2>
         <table>
           <thead>
@@ -769,6 +796,20 @@
         </table>
       </div>
     </div>
+
+    <!-- 4. Active Cases & Daily Cause List Tab Pane -->
+    <div class="card tab-pane" id="activeCasesTabPane" style="display:none;">
+      <h2 id="tableTitle">Active Cases & Daily Cause List</h2>
+      <input type="text" id="search" placeholder="🔍 Search by Case No, Client, Phone, Court, Dispute Property, or Date..." onkeyup="renderCases()">
+      
+      <div class="expand-collapse-controls" style="margin-top: 0.8rem;">
+        <button type="button" class="btn-sm-ctrl" onclick="expandAllCourts()">📂 Expand All Courts</button>
+        <button type="button" class="btn-sm-ctrl" onclick="collapseAllCourts()">📁 Collapse All Courts</button>
+      </div>
+
+      <div id="courtAccordionContainer" style="margin-top: 0.5rem;"></div>
+    </div>
+
   </div>
 
   <!-- PARTIES-ONLY CASE LIST MODAL -->
@@ -1043,6 +1084,37 @@
     ];
     let currentFilter = 'All';
 
+    /* TAB NAVIGATION CONTROL */
+    function switchTab(tabId, btnElement) {
+      document.querySelectorAll('.nav-tab-btn').forEach(btn => btn.classList.remove('active'));
+      if (btnElement) btnElement.classList.add('active');
+
+      const calendarPane = document.getElementById('calendarTabPane');
+      const registerPane = document.getElementById('registerCaseTabPane');
+      const feeSearchPane = document.getElementById('feeSearchTabPane');
+      const activeCasesPane = document.getElementById('activeCasesTabPane');
+      const filterBarContainer = document.getElementById('filterBarContainer');
+
+      calendarPane.style.display = 'none';
+      registerPane.style.display = 'none';
+      feeSearchPane.style.display = 'none';
+      activeCasesPane.style.display = 'none';
+      if (filterBarContainer) filterBarContainer.style.display = 'none';
+
+      if (tabId === 'calendarTab') {
+        calendarPane.style.display = 'block';
+        renderCalendar();
+      } else if (tabId === 'registerCaseTab') {
+        registerPane.style.display = 'block';
+      } else if (tabId === 'feeSearchTab') {
+        feeSearchPane.style.display = 'block';
+      } else if (tabId === 'activeCasesTab') {
+        activeCasesPane.style.display = 'block';
+        if (filterBarContainer) filterBarContainer.style.display = 'flex';
+        renderCases();
+      }
+    }
+
     /* AUTHENTICATION CONTROL */
     auth.onAuthStateChanged((user) => {
       if (user) {
@@ -1097,7 +1169,7 @@
       }
     }
 
-    async function saveCaseToCloud(caseData) {
+    async function saveCaseToCloud(caseData, isNew = false) {
       try {
         const cleanData = {
           id: caseData.id || "",
@@ -1105,6 +1177,7 @@
           caseNo: caseData.caseNo || "",
           court: caseData.court || "",
           parties: caseData.parties || "",
+          disputeProperty: caseData.disputeProperty || "NA",
           clientName: caseData.clientName || "",
           clientPhone: caseData.clientPhone || "",
           client: caseData.client || "",
@@ -1122,7 +1195,9 @@
         };
 
         await db.collection('cases').doc(cleanData.id).set(cleanData);
-        loadDataFromCloud();
+        await loadDataFromCloud();
+        
+        alert(isNew ? "✅ New Case registered successfully and reflected instantly!" : "✅ Case record updated successfully and reflected instantly!");
       } catch (error) {
         alert("Error saving to cloud: " + error.message);
       }
@@ -1133,6 +1208,7 @@
         await db.collection('cases').doc(caseId).delete();
         cases = cases.filter(c => c.id !== caseId);
         saveAndRefresh();
+        alert("🗑️ Case record deleted successfully!");
       } catch (error) {
         alert("Error deleting from cloud: " + error.message);
       }
@@ -1417,7 +1493,7 @@
       const targetCase = cases.find(c => c.id === caseId);
       if (targetCase) {
         targetCase.causeNo = value.trim();
-        await saveCaseToCloud(targetCase);
+        await saveCaseToCloud(targetCase, false);
       }
     }
 
@@ -1619,6 +1695,7 @@
                 <th>Status</th>
                 <th>Case No</th>
                 <th>Parties</th>
+                <th>Dispute Property</th>
                 <th>Client Details</th>
                 <th>Stage</th>
               </tr>
@@ -1633,6 +1710,7 @@
               <td><span class="status-tag">${c.status || 'Ongoing'}</span></td>
               <td><strong>${c.caseNo}</strong></td>
               <td>${c.parties}</td>
+              <td>${c.disputeProperty || 'NA'}</td>
               <td>${getClientDisplay(c)}</td>
               <td>${c.stage || 'N/A'}</td>
             </tr>
@@ -1696,7 +1774,7 @@
 
       if (searchQuery) {
         matchingCases = matchingCases.filter(c => {
-          const text = `${c.caseNo} ${c.parties} ${c.court} ${c.stage || ''} ${c.clientName || ''} ${c.clientPhone || ''}`.toLowerCase();
+          const text = `${c.caseNo} ${c.parties} ${c.court} ${c.disputeProperty || ''} ${c.stage || ''} ${c.clientName || ''} ${c.clientPhone || ''}`.toLowerCase();
           return text.includes(searchQuery);
         });
       }
@@ -1716,7 +1794,7 @@
           <input type="checkbox" class="forward-checkbox" value="${c.id}" id="fwd_chk_${c.id}">
           <label for="fwd_chk_${c.id}" class="forward-item-details" style="margin-top:0; cursor:pointer;">
             <div style="font-weight: bold; color: var(--primary);">#${idx + 1} — ${c.caseNo} (${c.parties})</div>
-            <div style="font-size:0.8rem; color:#64748b;">Court: ${c.court} | Stage: ${c.stage || 'N/A'} | Client: ${getClientPlainText(c)}</div>
+            <div style="font-size:0.8rem; color:#64748b;">Court: ${c.court} | Property: ${c.disputeProperty || 'NA'} | Client: ${getClientPlainText(c)}</div>
           </label>
         `;
         container.appendChild(item);
@@ -1763,7 +1841,7 @@
           targetCase.history.push(forwardLog);
           targetCase.nextDate = targetDate;
 
-          await saveCaseToCloud(targetCase);
+          await saveCaseToCloud(targetCase, false);
         }
       }
 
@@ -1826,7 +1904,7 @@
         for (const c of cases) {
           if (c.court === oldCourtVal) {
             c.court = newCourtVal;
-            await saveCaseToCloud(c);
+            await saveCaseToCloud(c, false);
           }
         }
 
@@ -1864,7 +1942,7 @@
         for (const c of cases) {
           if (c.court === selectedValue) {
             c.court = '';
-            await saveCaseToCloud(c);
+            await saveCaseToCloud(c, false);
           }
         }
 
@@ -1928,7 +2006,7 @@
         for (const c of cases) {
           if (c.status === oldStatusVal) {
             c.status = newStatusVal;
-            await saveCaseToCloud(c);
+            await saveCaseToCloud(c, false);
           }
         }
 
@@ -1971,7 +2049,7 @@
         for (const c of cases) {
           if (c.status === selectedValue) {
             c.status = statusOptions[0];
-            await saveCaseToCloud(c);
+            await saveCaseToCloud(c, false);
           }
         }
 
@@ -2027,11 +2105,13 @@
 
     caseForm.addEventListener('submit', function(e) {
       e.preventDefault();
+      const isNewCase = !document.getElementById('caseId').value;
       const id = document.getElementById('caseId').value || db.collection('cases').doc().id;
       const existingCase = cases.find(c => c.id === id);
 
       const clientName = document.getElementById('clientName').value.trim();
       const clientPhone = document.getElementById('clientPhone').value.trim();
+      const disputeProperty = document.getElementById('disputeProperty').value.trim() || "NA";
 
       const caseData = {
         id: id,
@@ -2039,6 +2119,7 @@
         caseNo: document.getElementById('caseNo').value,
         court: document.getElementById('court').value,
         parties: document.getElementById('parties').value,
+        disputeProperty: disputeProperty,
         clientName: clientName,
         clientPhone: clientPhone,
         client: `${clientName} ${clientPhone ? '(' + clientPhone + ')' : ''}`.trim(),
@@ -2048,7 +2129,7 @@
         history: existingCase && existingCase.history ? existingCase.history : []
       };
 
-      saveCaseToCloud(caseData);
+      saveCaseToCloud(caseData, isNewCase);
       resetForm();
     });
 
@@ -2079,7 +2160,7 @@
         targetCase.nextDate = hearingLog.assignedNextDate;
         if (hearingLog.stage) targetCase.stage = hearingLog.stage;
 
-        saveCaseToCloud(targetCase).then(() => {
+        saveCaseToCloud(targetCase, false).then(() => {
           resetHearingForm();
           openHistoryModal(caseId);
         });
@@ -2113,7 +2194,7 @@
 
       if (searchQuery) {
         matchingCases = matchingCases.filter(c => {
-          const combined = `${c.caseNo} ${c.parties} ${c.clientName || ''} ${c.clientPhone || ''} ${c.stage || ''}`.toLowerCase();
+          const combined = `${c.caseNo} ${c.parties} ${c.disputeProperty || ''} ${c.clientName || ''} ${c.clientPhone || ''} ${c.stage || ''}`.toLowerCase();
           return combined.includes(searchQuery);
         });
       }
@@ -2162,7 +2243,7 @@
                 </div>
               </div>
               <div style="font-size:0.8rem; color:#64748b; margin-bottom: 0.4rem;">
-                Court: ${c.court} | Client: ${getClientPlainText(c)}
+                Court: ${c.court} | Dispute Property: ${c.disputeProperty || 'NA'} | Client: ${getClientPlainText(c)}
               </div>
 
               <label>Proceedings / Remarks</label>
@@ -2302,8 +2383,7 @@
         targetCase.nextDate = nextDate;
         if (stage) targetCase.stage = stage;
 
-        await saveCaseToCloud(targetCase);
-        alert(`Case #${targetCase.caseNo} single posting saved successfully!`);
+        await saveCaseToCloud(targetCase, false);
         loadBulkLogCases();
       }
     }
@@ -2347,7 +2427,7 @@
             targetCase.nextDate = nextDate;
             if (stage) targetCase.stage = stage;
 
-            await saveCaseToCloud(targetCase);
+            await saveCaseToCloud(targetCase, false);
             successCount++;
           }
         }
@@ -2376,7 +2456,7 @@
           return false;
         }
         const clientInfoText = `${c.clientName || ''} ${c.clientPhone || ''} ${c.client || ''}`;
-        const queryStr = `${c.caseNo} ${c.court} ${c.parties} ${clientInfoText} ${c.nextDate} ${status}`.toLowerCase();
+        const queryStr = `${c.caseNo} ${c.court} ${c.parties} ${c.disputeProperty || ''} ${clientInfoText} ${c.nextDate} ${status}`.toLowerCase();
         return queryStr.includes(search);
       });
 
@@ -2414,7 +2494,7 @@
                 <span class="status-tag">${status}</span>
               </td>
               <td><strong>${c.caseNo}</strong><br><small>${c.parties}</small></td>
-              <td><small><em>Stage: ${c.stage || 'N/A'}</em></small></td>
+              <td><small><strong>Property:</strong> ${c.disputeProperty || 'NA'}</small><br><small><em>Stage: ${c.stage || 'N/A'}</em></small></td>
               <td>${getClientDisplay(c)}</td>
               <td class="actions">
                 <button class="btn-action btn-history" onclick="openHistoryModal('${c.id}')" title="View/Add Hearing Records">
@@ -2439,7 +2519,7 @@
                 <tr>
                   <th>Next Date</th>
                   <th>Case Info</th>
-                  <th>Stage</th>
+                  <th>Property & Stage</th>
                   <th>Client Details</th>
                   <th>Actions</th>
                 </tr>
@@ -2547,6 +2627,7 @@
                 <th>Case No</th>
                 <th>Parties</th>
                 <th>Court / Judge</th>
+                <th>Dispute Property</th>
                 <th>Stage</th>
                 <th>Client Details</th>
               </tr>
@@ -2561,6 +2642,7 @@
               <td><strong>${c.caseNo}</strong></td>
               <td>${c.parties}</td>
               <td>${c.court}</td>
+              <td>${c.disputeProperty || 'NA'}</td>
               <td>${c.stage || 'N/A'}</td>
               <td>${getClientDisplay(c)}</td>
             </tr>
@@ -2594,6 +2676,7 @@
     function resetForm() {
       caseForm.reset();
       document.getElementById('caseId').value = '';
+      document.getElementById('disputeProperty').value = 'NA';
       document.getElementById('formTitle').innerText = "Register New Case";
       document.getElementById('saveBtn').innerText = "Save Case File";
       document.getElementById('partyAlertBox').style.display = 'none';
@@ -2611,6 +2694,7 @@
       document.getElementById('caseNo').value = targetCase.caseNo || '';
       renderCourtDropdown(targetCase.court || '');
       document.getElementById('parties').value = targetCase.parties || '';
+      document.getElementById('disputeProperty').value = targetCase.disputeProperty || 'NA';
       document.getElementById('clientName').value = targetCase.clientName || '';
       document.getElementById('clientPhone').value = targetCase.clientPhone || '';
       document.getElementById('nextDate').value = targetCase.nextDate || '';
@@ -2618,6 +2702,9 @@
 
       document.getElementById('formTitle').innerText = `Edit Case: ${targetCase.caseNo}`;
       document.getElementById('saveBtn').innerText = "Update Case File";
+      
+      // Switch to Register Case tab to show form edit interface
+      switchTab('registerCaseTab', document.querySelectorAll('.nav-tab-btn')[1]);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       checkDuplicateParties();
     }
@@ -2706,7 +2793,7 @@
         const targetCase = cases.find(c => c.id === caseId);
         if (targetCase && targetCase.history) {
           targetCase.history.splice(index, 1);
-          await saveCaseToCloud(targetCase);
+          await saveCaseToCloud(targetCase, false);
           openHistoryModal(caseId);
         }
       }
@@ -2762,6 +2849,7 @@
             <div><strong>Status:</strong> ${c.status || 'Ongoing'}</div>
             <div><strong>Court / Forum:</strong> ${c.court}</div>
             <div><strong>Parties:</strong> ${c.parties}</div>
+            <div><strong>Dispute Property:</strong> ${c.disputeProperty || 'NA'}</div>
             <div><strong>Client Details:</strong> ${getClientPlainText(c)}</div>
             <div><strong>Next Hearing Date:</strong> ${c.nextDate}</div>
             <div><strong>Current Stage:</strong> ${c.stage || 'N/A'}</div>
