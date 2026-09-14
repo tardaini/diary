@@ -2385,6 +2385,7 @@
 
         await saveCaseToCloud(targetCase, false);
         loadBulkLogCases();
+        alert(`✅ Log saved successfully for Case No: ${targetCase.caseNo}!`);
       }
     }
 
@@ -2396,9 +2397,15 @@
       if (cards.length === 0) return;
 
       let successCount = 0;
+      let unselectedCount = 0;
+      let missingFieldsCount = 0;
+
       for (const card of cards) {
         const chk = card.querySelector('.logbook-select-chk');
-        if (chk && !chk.checked) continue;
+        if (chk && !chk.checked) {
+          unselectedCount++;
+          continue;
+        }
 
         const caseId = card.querySelector('.bulk-case-id').value;
         const notes = card.querySelector('.bulk-notes').value.trim();
@@ -2408,33 +2415,44 @@
         const fee = parseFloat(card.querySelector('.bulk-fee').value) || 0;
         const otherFee = parseFloat(card.querySelector('.bulk-other-fee').value) || 0;
 
-        if (notes && nextDate) {
-          const targetCase = cases.find(c => c.id === caseId);
-          if (targetCase) {
-            const logEntry = {
-              date: targetDate,
-              stage: stage,
-              notes: notes,
-              assignedNextDate: nextDate,
-              fee: fee,
-              otherFee: otherFee
-            };
+        if (!notes || !nextDate) {
+          missingFieldsCount++;
+          continue;
+        }
 
-            if (!targetCase.history) targetCase.history = [];
-            targetCase.history.push(logEntry);
+        const targetCase = cases.find(c => c.id === caseId);
+        if (targetCase) {
+          const logEntry = {
+            date: targetDate,
+            stage: stage,
+            notes: notes,
+            assignedNextDate: nextDate,
+            fee: fee,
+            otherFee: otherFee
+          };
 
-            targetCase.status = newStatus;
-            targetCase.nextDate = nextDate;
-            if (stage) targetCase.stage = stage;
+          if (!targetCase.history) targetCase.history = [];
+          targetCase.history.push(logEntry);
 
-            await saveCaseToCloud(targetCase, false);
-            successCount++;
-          }
+          targetCase.status = newStatus;
+          targetCase.nextDate = nextDate;
+          if (stage) targetCase.stage = stage;
+
+          await saveCaseToCloud(targetCase, false);
+          successCount++;
         }
       }
 
       closeBulkLogModal();
-      alert(`Successfully submitted bulk posting for ${successCount} case(s)!`);
+
+      let message = `Successfully posted ${successCount} selected case(s) to their next hearing!`;
+      if (unselectedCount > 0) {
+        message += `\n(${unselectedCount} case(s) were skipped because they were unchecked.)`;
+      }
+      if (missingFieldsCount > 0) {
+        message += `\n(${missingFieldsCount} checked case(s) were skipped due to missing Proceedings or Next Hearing Date.)`;
+      }
+      alert(message);
     }
 
     function saveAndRefresh() {
