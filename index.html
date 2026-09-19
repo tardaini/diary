@@ -1084,7 +1084,22 @@
             </div>
             <div>
               <label style="margin-top:0;" for="masterNotes">Master Proceedings / Remarks:</label>
-              <input type="text" id="masterNotes" placeholder="e.g. Adjourned / Case Forwarded En-Masse">
+              <select id="masterNotesSelect" onchange="toggleCustomMasterNotes(this.value)" style="margin-top:0.2rem;">
+                <option value="NA" selected>NA</option>
+                <option value="साक्ष्‍य प्रतिवादी">साक्ष्‍य प्रतिवादी</option>
+                <option value="उत्तर प्रतिवाद पत्र">उत्तर प्रतिवाद पत्र</option>
+                <option value="वाद बिन्‍दु निर्धारण">वाद बिन्‍दु निर्धारण</option>
+                <option value="आदेश हेतु सुरक्षित">आदेश हेतु सुरक्षित</option>
+                <option value="प्रतिवाद पत्र">प्रतिवाद पत्र</option>
+                <option value="बहस">बहस</option>
+                <option value="साक्ष्‍य वादी">साक्ष्‍य वादी</option>
+                <option value="प्रतीक्षा अवर न्‍यायालय पत्रावली">प्रतीक्षा अवर न्‍यायालय पत्रावली</option>
+                <option value="निस्‍तारण प्रार्थनापत्र">निस्‍तारण प्रार्थनापत्र</option>
+                <option value="ग्राह्यता">ग्राह्यता</option>
+                <option value="प्रतीक्षा नोटिस तामीला">प्रतीक्षा नोटिस तामीला</option>
+                <option value="अन्य">अन्य</option>
+              </select>
+              <input type="text" id="masterNotesText" placeholder="कस्टम कार्यवाही/टिप्पणी लिखें..." style="display:none; margin-top:0.4rem;">
             </div>
           </div>
         </div>
@@ -1207,6 +1222,23 @@
   </div>
 
   <script>
+    /* --- PREDEFINED PROCEEDINGS / STAGE DROPDOWN OPTIONS --- */
+    const STAGE_OPTIONS = [
+      "NA",
+      "साक्ष्‍य प्रतिवादी",
+      "उत्तर प्रतिवाद पत्र",
+      "वाद बिन्‍दु निर्धारण",
+      "आदेश हेतु सुरक्षित",
+      "प्रतिवाद पत्र",
+      "बहस",
+      "साक्ष्‍य वादी",
+      "प्रतीक्षा अवर न्‍यायालय पत्रावली",
+      "निस्‍तारण प्रार्थनापत्र",
+      "ग्राह्यता",
+      "प्रतीक्षा नोटिस तामीला",
+      "अन्य"
+    ];
+
     /* --- FULL SCREEN LOADER CONTROLLER --- */
     function showLoader(message = "Processing Request...") {
       const overlay = document.getElementById('globalLoaderOverlay');
@@ -2415,8 +2447,15 @@
       document.getElementById('bulkLogDate').value = todayStr;
       document.getElementById('bulkLogSearch').value = '';
       document.getElementById('masterNextDate').value = '';
-      document.getElementById('masterNotes').value = '';
       
+      const masterSelect = document.getElementById('masterNotesSelect');
+      if (masterSelect) masterSelect.value = "NA";
+      const masterText = document.getElementById('masterNotesText');
+      if (masterText) {
+        masterText.value = "";
+        masterText.style.display = "none";
+      }
+
       const winEl = document.getElementById('bulkLogWindowContent');
       if (winEl) {
         winEl.classList.remove('minimized');
@@ -2429,6 +2468,42 @@
 
     function closeBulkLogModal() {
       document.getElementById('bulkLogModal').style.display = 'none';
+    }
+
+    /* Helper function for Master Proceedings Custom Text Toggle */
+    function toggleCustomMasterNotes(val) {
+      const customTxt = document.getElementById('masterNotesText');
+      if (customTxt) {
+        if (val === 'अन्य') {
+          customTxt.style.display = 'block';
+          customTxt.focus();
+        } else {
+          customTxt.style.display = 'none';
+        }
+      }
+    }
+
+    /* Helper function for Logbook Card Stage/Notes Select Dropdown Toggle */
+    function toggleLogbookCustomInput(cardId, fieldName, val) {
+      const customInput = document.getElementById(`${fieldName}_custom_${cardId}`);
+      if (customInput) {
+        if (val === 'अन्य') {
+          customInput.style.display = 'block';
+          customInput.focus();
+        } else {
+          customInput.style.display = 'none';
+        }
+      }
+    }
+
+    /* Helper function to construct stage select options */
+    function buildStageSelectHtml(selectedVal = "NA") {
+      let optionsHtml = '';
+      STAGE_OPTIONS.forEach(opt => {
+        const isSel = (opt === selectedVal) ? 'selected' : '';
+        optionsHtml += `<option value="${opt}" ${isSel}>${opt}</option>`;
+      });
+      return optionsHtml;
     }
 
     function loadBulkLogCases() {
@@ -2481,6 +2556,13 @@
             statusOptionsHtml += `<option value="${s}" ${isSelected}>${s}</option>`;
           });
 
+          // Check if stage is in defined options or custom
+          const currentStage = c.stage || 'NA';
+          const isStandardStage = STAGE_OPTIONS.includes(currentStage);
+          const stageSelectValue = isStandardStage ? currentStage : 'अन्य';
+          const stageCustomDisplay = isStandardStage ? 'none' : 'block';
+          const stageCustomValue = isStandardStage ? '' : currentStage;
+
           cardsHtml += `
             <div class="logbook-case-card" id="log_card_${c.id}">
               <input type="hidden" class="bulk-case-id" value="${c.id}">
@@ -2501,7 +2583,10 @@
               </div>
 
               <label>Proceedings / Remarks</label>
-              <textarea class="bulk-notes" rows="2" placeholder="Enter proceedings..."></textarea>
+              <select class="bulk-notes-select" onchange="toggleLogbookCustomInput('${c.id}', 'notes', this.value)" style="margin-top:0.2rem;">
+                ${buildStageSelectHtml("NA")}
+              </select>
+              <input type="text" class="bulk-notes-custom" id="notes_custom_${c.id}" placeholder="कस्टम कार्यवाही/टिप्पणी लिखें..." style="display:none; margin-top:0.3rem;">
 
               <div class="logbook-grid">
                 <div>
@@ -2516,7 +2601,10 @@
                 </div>
                 <div>
                   <label>Updated Stage</label>
-                  <input type="text" class="bulk-stage" value="${c.stage || ''}" placeholder="e.g. Next Evidence">
+                  <select class="bulk-stage-select" onchange="toggleLogbookCustomInput('${c.id}', 'stage', this.value)" style="margin-top:0.2rem;">
+                    ${buildStageSelectHtml(stageSelectValue)}
+                  </select>
+                  <input type="text" class="bulk-stage-custom" id="stage_custom_${c.id}" value="${stageCustomValue}" placeholder="कस्टम स्टेज लिखें..." style="display:${stageCustomDisplay}; margin-top:0.3rem;">
                 </div>
                 <div>
                   <label>Hearing Fee</label>
@@ -2571,20 +2659,50 @@
       });
     }
 
+    function getMasterNotesValue() {
+      const sel = document.getElementById('masterNotesSelect').value;
+      if (sel === 'अन्य') {
+        return document.getElementById('masterNotesText').value.trim();
+      }
+      return sel;
+    }
+
+    function getCardFieldValue(card, selectClass, customInputId) {
+      const selVal = card.querySelector(`.${selectClass}`).value;
+      if (selVal === 'अन्य') {
+        const customEl = card.querySelector(`#${customInputId}`);
+        return customEl ? customEl.value.trim() : '';
+      }
+      return selVal;
+    }
+
     function selectAllLogbookCases() {
       const todayVal = document.getElementById('bulkLogDate').value;
       const masterDate = document.getElementById('masterNextDate').value;
-      const masterNotes = document.getElementById('masterNotes').value;
+      const masterNotesVal = getMasterNotesValue();
 
       document.querySelectorAll('.logbook-case-card').forEach(card => {
         const chk = card.querySelector('.logbook-select-chk');
         if (chk) chk.checked = true;
 
-        const notesArea = card.querySelector('.bulk-notes');
         const nextDateInput = card.querySelector('.bulk-next-date');
-        
-        if (!notesArea.value) notesArea.value = masterNotes || "Adjourned / Taken up";
         if (!nextDateInput.value) nextDateInput.value = masterDate || todayVal;
+
+        if (masterNotesVal && masterNotesVal !== 'NA') {
+          const notesSelect = card.querySelector('.bulk-notes-select');
+          if (STAGE_OPTIONS.includes(masterNotesVal)) {
+            notesSelect.value = masterNotesVal;
+            const customInput = card.querySelector('.bulk-notes-custom');
+            if (customInput) customInput.style.display = 'none';
+          } else {
+            notesSelect.value = 'अन्य';
+            const customInput = card.querySelector('.bulk-notes-custom');
+            if (customInput) {
+              customInput.style.display = 'block';
+              customInput.value = masterNotesVal;
+            }
+          }
+        }
       });
     }
 
@@ -2593,7 +2711,11 @@
         const chk = card.querySelector('.logbook-select-chk');
         if (chk) chk.checked = false;
 
-        card.querySelector('.bulk-notes').value = "";
+        const notesSelect = card.querySelector('.bulk-notes-select');
+        if (notesSelect) notesSelect.value = "NA";
+        const notesCustom = card.querySelector('.bulk-notes-custom');
+        if (notesCustom) { notesCustom.value = ""; notesCustom.style.display = "none"; }
+
         card.querySelector('.bulk-next-date').value = "";
         card.querySelector('.bulk-fee').value = "";
         card.querySelector('.bulk-other-fee').value = "";
@@ -2605,16 +2727,15 @@
       if (!card) return;
 
       const targetDate = document.getElementById('bulkLogDate').value;
-      const notes = card.querySelector('.bulk-notes').value.trim();
+      const notes = getCardFieldValue(card, 'bulk-notes-select', `notes_custom_${caseId}`);
       const newStatus = card.querySelector('.bulk-status').value;
       const nextDate = card.querySelector('.bulk-next-date').value;
-      const stage = card.querySelector('.bulk-stage').value;
+      const stage = getCardFieldValue(card, 'bulk-stage-select', `stage_custom_${caseId}`);
       const fee = parseFloat(card.querySelector('.bulk-fee').value) || 0;
       const otherFee = parseFloat(card.querySelector('.bulk-other-fee').value) || 0;
 
       if (!notes) {
-        alert("Please enter proceedings / remarks.");
-        card.querySelector('.bulk-notes').focus();
+        alert("Please select or enter proceedings / remarks.");
         return;
       }
       if (!nextDate) {
@@ -2657,7 +2778,7 @@
     async function submitForwardAllLogbook() {
       const targetDate = document.getElementById('bulkLogDate').value;
       const masterNextDate = document.getElementById('masterNextDate').value;
-      const masterNotes = document.getElementById('masterNotes').value.trim();
+      const masterNotesVal = getMasterNotesValue();
       const cards = document.querySelectorAll('.logbook-case-card');
 
       if (cards.length === 0) {
@@ -2676,15 +2797,15 @@
         let count = 0;
         for (const card of cards) {
           const caseId = card.querySelector('.bulk-case-id').value;
-          const cardNotes = card.querySelector('.bulk-notes').value.trim();
+          const cardNotes = getCardFieldValue(card, 'bulk-notes-select', `notes_custom_${caseId}`);
           const cardNextDate = card.querySelector('.bulk-next-date').value;
           const newStatus = card.querySelector('.bulk-status').value;
-          const stage = card.querySelector('.bulk-stage').value;
+          const stage = getCardFieldValue(card, 'bulk-stage-select', `stage_custom_${caseId}`);
           const fee = parseFloat(card.querySelector('.bulk-fee').value) || 0;
           const otherFee = parseFloat(card.querySelector('.bulk-other-fee').value) || 0;
 
           const assignedNextDate = cardNextDate || masterNextDate;
-          const notes = cardNotes || masterNotes || `Hearing Date Forwarded from ${targetDate} to ${assignedNextDate}`;
+          const notes = (cardNotes && cardNotes !== 'NA') ? cardNotes : (masterNotesVal && masterNotesVal !== 'NA' ? masterNotesVal : `Hearing Date Forwarded from ${targetDate} to ${assignedNextDate}`);
 
           const targetCase = cases.find(c => c.id === caseId);
           if (targetCase) {
@@ -2721,7 +2842,7 @@
     async function submitForwardSelectedLogbook() {
       const targetDate = document.getElementById('bulkLogDate').value;
       const masterNextDate = document.getElementById('masterNextDate').value;
-      const masterNotes = document.getElementById('masterNotes').value.trim();
+      const masterNotesVal = getMasterNotesValue();
       const cards = document.querySelectorAll('.logbook-case-card');
 
       if (cards.length === 0) return;
@@ -2736,15 +2857,15 @@
           if (!chk || !chk.checked) continue;
 
           const caseId = card.querySelector('.bulk-case-id').value;
-          const cardNotes = card.querySelector('.bulk-notes').value.trim();
+          const cardNotes = getCardFieldValue(card, 'bulk-notes-select', `notes_custom_${caseId}`);
           const cardNextDate = card.querySelector('.bulk-next-date').value;
           const newStatus = card.querySelector('.bulk-status').value;
-          const stage = card.querySelector('.bulk-stage').value;
+          const stage = getCardFieldValue(card, 'bulk-stage-select', `stage_custom_${caseId}`);
           const fee = parseFloat(card.querySelector('.bulk-fee').value) || 0;
           const otherFee = parseFloat(card.querySelector('.bulk-other-fee').value) || 0;
 
           const assignedNextDate = cardNextDate || masterNextDate;
-          const notes = cardNotes || masterNotes;
+          const notes = (cardNotes && cardNotes !== 'NA') ? cardNotes : masterNotesVal;
 
           if (!notes || !assignedNextDate) {
             missingCount++;
