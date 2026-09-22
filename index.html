@@ -357,28 +357,27 @@
     .btn-caselist { background-color: #0284c7; width: auto; margin: 0; }
     .btn-backup { background-color: #8b5cf6; width: auto; margin: 0; }
 
-    /* File Upload Box Styling */
-    .file-upload-box {
-      border: 2px dashed #cbd5e1;
+    /* Multi-Document Upload Styling */
+    .multi-doc-section {
+      border: 1px solid #cbd5e1;
       border-radius: 6px;
-      padding: 1rem;
+      padding: 0.8rem;
       background: #f8fafc;
       margin-top: 0.4rem;
-      transition: border-color 0.2s ease;
     }
-    .file-upload-box:hover {
-      border-color: var(--accent);
-    }
-    .file-preview-card {
+    .doc-item-row {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      background: #e0f2fe;
-      border: 1px solid #0284c7;
-      padding: 0.5rem 0.8rem;
-      border-radius: 4px;
+      gap: 0.5rem;
       margin-top: 0.5rem;
-      font-size: 0.85rem;
+      background: #ffffff;
+      padding: 0.5rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+    }
+    .doc-item-row input[type="text"] {
+      margin-top: 0;
+      flex: 1;
     }
 
     .court-control-wrapper {
@@ -597,20 +596,6 @@
       background: var(--accent);
     }
 
-    .hearing-actions {
-      display: flex;
-      gap: 0.5rem;
-      margin-top: 0.5rem;
-    }
-
-    .btn-sm {
-      padding: 0.2rem 0.5rem;
-      font-size: 0.75rem;
-      border-radius: 3px;
-      width: auto;
-      margin-top: 0;
-    }
-
     .fee-summary-card {
       background: #e0f2fe;
       border: 1px solid #0284c7;
@@ -728,26 +713,6 @@
       }
     }
 
-    .forward-list-item {
-      display: flex;
-      align-items: center;
-      gap: 0.8rem;
-      background: #f8fafc;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      padding: 0.75rem;
-      margin-bottom: 0.5rem;
-    }
-    .forward-list-item input[type="checkbox"] {
-      width: 1.2rem;
-      height: 1.2rem;
-      margin: 0;
-      cursor: pointer;
-    }
-    .forward-item-details {
-      flex: 1;
-    }
-
     /* Accordion / Collapse Styles for Court-Wise View */
     .court-accordion-group {
       margin-bottom: 0.75rem;
@@ -769,28 +734,6 @@
     }
     .court-accordion-header:hover {
       background-color: #e2e8f0;
-    }
-    .court-accordion-header-controls {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-    }
-    .btn-court-print {
-      background-color: #0284c7;
-      color: #ffffff;
-      border: none;
-      padding: 0.25rem 0.55rem;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: bold;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.2rem;
-      transition: background-color 0.2s ease;
-    }
-    .btn-court-print:hover {
-      background-color: #0369a1;
     }
     .court-accordion-content {
       display: none;
@@ -828,7 +771,6 @@
       background-color: var(--primary);
     }
 
-    /* Case List Specific Styles */
     .party-item-row {
       display: flex;
       align-items: center;
@@ -885,9 +827,7 @@
     <h1>⚖️ Advocate Pt. Sudhanshu Kumar Tiwari - Case Diary</h1>
     
     <div class="header-btns">
-      <div class="filter-bar" id="filterBarContainer" style="display: none;">
-        <!-- Dynamically Rendered Status Filter Buttons -->
-      </div>
+      <div class="filter-bar" id="filterBarContainer" style="display: none;"></div>
 
       <button class="btn-caselist" onclick="openCaseListModal()">📜 Print Case List</button>
       <button class="btn-forward" onclick="openForwardCaseModal()">⏩ Forward Case</button>
@@ -912,7 +852,6 @@
   </div>
 
   <div class="container">
-    <!-- Tab Panes Container -->
     
     <!-- 1. Calendar Tab Pane (Default View) -->
     <div class="card tab-pane" id="calendarTabPane">
@@ -966,13 +905,11 @@
         
         <div id="partyAlertBox" class="party-alert"></div>
 
-        <!-- Field Act & Section -->
         <label for="actSection">Act & Section</label>
-        <input type="text" id="actSection" value="NA" placeholder="e.g. Section 138 Negotiable Instruments Act / U.P. Revenue Code">
+        <input type="text" id="actSection" value="NA" placeholder="e.g. Section 138 Negotiable Instruments Act">
 
-        <!-- Dispute Property Field -->
         <label for="disputeProperty">Dispute Property</label>
-        <input type="text" id="disputeProperty" value="NA" placeholder="e.g. Land Survey No. 45/2 / Commercial Complex">
+        <input type="text" id="disputeProperty" value="NA" placeholder="e.g. Land Survey No. 45/2">
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
           <div>
@@ -995,26 +932,20 @@
           <button type="button" class="btn-court-delete" onclick="deleteSelectedStage()" title="Delete Selected Proceedings Option">🗑️</button>
         </div>
 
-        <!-- Case Document Upload Field & View Options -->
-        <label for="caseDocument">Attach Case Document / File (PDF, Image, Doc)</label>
-        <div class="file-upload-box">
-          <input type="file" id="caseDocument" accept=".pdf,image/*,.doc,.docx" onchange="handleFileUpload(event)" style="margin-top:0;">
-          <input type="text" id="customFileName" placeholder="Type document name (e.g., Plaint, Vakalatnama, Evidence Document)" style="margin-top:0.5rem;" oninput="updateFileNameFromInput(this.value)">
-          <input type="hidden" id="fileDataUrl">
-          <input type="hidden" id="fileName">
-          <div id="filePreviewContainer" style="display:none;" class="file-preview-card">
-            <div>
-              <strong id="fileDisplayName">document.pdf</strong>
-              <small style="color:#0369a1; display:block;">File attached to case record</small>
-            </div>
-            <div style="display:flex; gap:0.4rem;">
-              <button type="button" class="btn-action btn-print" style="margin:0;" onclick="viewAttachedDocument()">👁️ View File</button>
-              <button type="button" class="btn-action btn-delete" style="margin:0;" onclick="removeAttachedDocument()">🗑️ Remove</button>
-            </div>
+        <!-- Multi-Document Upload Section -->
+        <label>Case Documents (Plaint, Affidavit, Vakalatnama, etc.)</label>
+        <div class="multi-doc-section">
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <input type="file" id="docFileInput" accept=".pdf,image/*,.doc,.docx" style="flex:1; margin-top:0;">
+            <input type="text" id="docCustomNameInput" placeholder="Document Name (e.g., Plaint, Affidavit)" style="flex:1; margin-top:0;">
+            <button type="button" class="btn-action btn-court-add" style="margin-top:0;" onclick="addDocumentRow()">+ Add File</button>
+          </div>
+          <div id="documentsListContainer">
+            <em style="font-size:0.8rem; color:#64748b;">No extra documents attached yet. Add files above.</em>
           </div>
         </div>
 
-        <button type="submit" id="saveBtn">Save Case File</button>
+        <button type="submit" id="saveBtn" style="margin-top:1.2rem;">Save Case File</button>
         <button type="button" class="btn-secondary" style="width:100%; margin-top:0.5rem;" onclick="resetForm()">Clear Form</button>
       </form>
     </div>
@@ -1134,7 +1065,7 @@
         </div>
       </div>
       <div class="window-body">
-        <p style="font-size: 0.88rem; color: #475569; margin-top:0;">Securely export your entire database (cases, court settings, statuses) into a backup JSON file or restore a previous backup.</p>
+        <p style="font-size: 0.88rem; color: #475569; margin-top:0;">Securely export your entire database into a backup JSON file or restore a previous backup.</p>
         
         <div style="margin-top: 1.2rem; display: flex; flex-direction: column; gap: 1rem;">
           <div>
@@ -1218,7 +1149,6 @@
   <!-- Bulk Update Log Book Window -->
   <div id="bulkLogModal" class="modal">
     <div class="modal-content window-modal-content" id="bulkLogWindowContent" style="max-width: 1100px;">
-      <!-- Desktop Window Titlebar -->
       <div class="window-titlebar" onmousedown="startDrag(event, 'bulkLogWindowContent')">
         <div class="window-title">📖 Update Log Book — Daily Hearing Outcomes & Single Forward</div>
         <div class="window-controls">
@@ -1228,7 +1158,6 @@
         </div>
       </div>
 
-      <!-- Window Body Inner -->
       <div class="window-body">
         <div style="display: flex; gap: 0.8rem; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; justify-content: space-between;">
           <div style="display: flex; gap: 0.8rem; align-items: center;">
@@ -1240,10 +1169,9 @@
           </div>
         </div>
 
-        <!-- Global Master Overrides for Forward All Action -->
         <div style="background: #f1f5f9; padding: 0.8rem; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 0.8rem;">
           <div style="font-size: 0.85rem; font-weight: bold; color: var(--primary); margin-bottom: 0.4rem;">
-            ⚡ Quick Master Forward Controls (Applies when clicking "Forward All"):
+            ⚡ Quick Master Forward Controls:
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 0.8rem;">
             <div>
@@ -1378,26 +1306,27 @@
     </div>
   </div>
 
-  <div id="calendarSummaryModal" class="modal">
-    <div class="modal-content window-modal-content" id="calendarSummaryWindowContent" style="max-width: 850px;">
-      <div class="window-titlebar" onmousedown="startDrag(event, 'calendarSummaryWindowContent')">
-        <div class="window-title" id="calendarModalTitle">Cause List Summary</div>
+  <!-- Court Cases Modal -->
+  <div id="courtCasesModal" class="modal">
+    <div class="modal-content window-modal-content" id="courtCasesWindowContent" style="max-width: 900px;">
+      <div class="window-titlebar" onmousedown="startDrag(event, 'courtCasesWindowContent')">
+        <div class="window-title" id="courtModalHeaderTitle">Cases under Selected Court</div>
         <div class="window-controls">
-          <button type="button" class="window-btn" onclick="toggleWindowMinimize('calendarSummaryWindowContent')" title="Minimize">_</button>
-          <button type="button" class="window-btn" onclick="toggleWindowMaximize('calendarSummaryWindowContent')" title="Maximize / Restore">□</button>
-          <button type="button" class="window-btn btn-close-win" onclick="closeCalendarSummaryModal()" title="Close Window">✕</button>
+          <button type="button" class="window-btn" onclick="toggleWindowMinimize('courtCasesWindowContent')" title="Minimize">_</button>
+          <button type="button" class="window-btn" onclick="toggleWindowMaximize('courtCasesWindowContent')" title="Maximize / Restore">□</button>
+          <button type="button" class="window-btn btn-close-win" onclick="closeCourtCasesModal()" title="Close Window">✕</button>
         </div>
       </div>
       <div class="window-body">
-        <div id="calendarModalBody"></div>
+        <div id="courtCasesModalBody"></div>
         <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-          <button id="printCalendarSummaryBtn" class="btn-print" style="margin-top: 0;" onclick="">🖨️ Print Summary List</button>
-          <button class="btn-secondary" style="margin-top: 0; width: 100%;" onclick="closeCalendarSummaryModal()">Close</button>
+          <button class="btn-secondary" style="margin-top: 0; width: 100%;" onclick="closeCourtCasesModal()">Close</button>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- History / Hearing Modal -->
   <div id="historyModal" class="modal">
     <div class="modal-content window-modal-content" id="historyWindowContent" style="max-width: 850px;">
       <div class="window-titlebar" onmousedown="startDrag(event, 'historyWindowContent')">
@@ -1433,7 +1362,7 @@
               </div>
               <div>
                 <label for="otherCourtFee">Stationary & Others Chrg.</label>
-                <input type="number" id="otherCourtFee" min="0" step="any" placeholder="e.g. 200 (Process/Typing)">
+                <input type="number" id="otherCourtFee" min="0" step="any" placeholder="e.g. 200">
               </div>
             </div>
 
@@ -1441,7 +1370,7 @@
             <input type="text" id="hearingStage" placeholder="e.g. Cross Examination Completed">
 
             <label for="hearingNotes">Proceedings / Orders / Remarks</label>
-            <textarea id="hearingNotes" rows="2" placeholder="Key arguments, interim orders, or tasks given by court..." required></textarea>
+            <textarea id="hearingNotes" rows="2" placeholder="Key arguments or interim orders..." required></textarea>
 
             <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
               <button type="submit" id="hearingSubmitBtn" style="background-color:#16a34a; margin-top:0.5rem;">Log Hearing & Update Case</button>
@@ -1465,11 +1394,11 @@
     let startX, startY, initialLeft, initialTop;
 
     function startDrag(e, windowContentId) {
-      if (e.target.closest('.window-controls')) return; // Do not drag if clicking window control buttons
+      if (e.target.closest('.window-controls')) return;
       isDragging = true;
       activeWindow = document.getElementById(windowContentId);
       
-      if (activeWindow.classList.contains('maximized')) return; // Don't drag if maximized
+      if (activeWindow.classList.contains('maximized')) return;
 
       startX = e.clientX;
       startY = e.clientY;
@@ -1520,7 +1449,82 @@
       "अन्य"
     ];
 
-    /* --- HYPERLINK & CLIPBOARD HANDLER FOR CASE NO / CNR --- */
+    /* --- MULTI-DOCUMENT MANAGEMENT --- */
+    let tempCaseDocuments = [];
+
+    function addDocumentRow() {
+      const fileInput = document.getElementById('docFileInput');
+      const nameInput = document.getElementById('docCustomNameInput');
+
+      if (!fileInput.files || fileInput.files.length === 0) {
+        alert("Please select a file to attach.");
+        return;
+      }
+
+      const file = fileInput.files[0];
+      if (file.size > 2 * 1024 * 1024) {
+        alert("File size exceeds 2MB limit.");
+        return;
+      }
+
+      const customName = nameInput.value.trim() || file.name;
+
+      showLoader("Processing File...");
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        tempCaseDocuments.push({
+          name: customName,
+          dataUrl: e.target.result,
+          fileName: file.name
+        });
+        fileInput.value = '';
+        nameInput.value = '';
+        renderTempDocumentsList();
+        hideLoader();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function renderTempDocumentsList() {
+      const container = document.getElementById('documentsListContainer');
+      if (tempCaseDocuments.length === 0) {
+        container.innerHTML = '<em style="font-size:0.8rem; color:#64748b;">No extra documents attached yet. Add files above.</em>';
+        return;
+      }
+
+      let html = '';
+      tempCaseDocuments.forEach((doc, idx) => {
+        html += `
+          <div class="doc-item-row">
+            <input type="text" value="${doc.name}" onchange="updateTempDocName(${idx}, this.value)" placeholder="Document Name">
+            <span style="font-size:0.75rem; color:#0284c7; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${doc.fileName}">${doc.fileName}</span>
+            <button type="button" class="btn-action btn-print" style="margin:0;" onclick="viewTempDocument(${idx})">👁️ View</button>
+            <button type="button" class="btn-action btn-delete" style="margin:0;" onclick="removeTempDocument(${idx})">🗑️</button>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    function updateTempDocName(idx, newName) {
+      if (tempCaseDocuments[idx]) {
+        tempCaseDocuments[idx].name = newName.trim() || tempCaseDocuments[idx].fileName;
+      }
+    }
+
+    function removeTempDocument(idx) {
+      tempCaseDocuments.splice(idx, 1);
+      renderTempDocumentsList();
+    }
+
+    function viewTempDocument(idx) {
+      const doc = tempCaseDocuments[idx];
+      if (doc) {
+        openDocumentViewer(doc.dataUrl, doc.name);
+      }
+    }
+
+    /* --- HYPERLINK & CLIPBOARD HANDLER --- */
     function openAndCopyCaseNo(caseNo) {
       if (!caseNo || caseNo === "NA") {
         window.open('https://vaad.up.nic.in/Search_CaseAutoNo.aspx', '_blank');
@@ -1551,21 +1555,21 @@
         document.execCommand('copy');
         showCopyToast(text);
       } catch (err) {
-        console.error('Fallback: Oops, unable to copy', err);
+        console.error('Fallback error', err);
       }
       document.body.removeChild(textArea);
     }
 
     function showCopyToast(caseNo) {
       const toast = document.getElementById('copyToast');
-      toast.innerText = `📋 Case No "${caseNo}" copied! You can now paste it on the website.`;
+      toast.innerText = `📋 Case No "${caseNo}" copied! Paste on website to check status.`;
       toast.style.display = 'block';
       setTimeout(() => {
         toast.style.display = 'none';
       }, 4000);
     }
 
-    /* --- FULL SCREEN LOADER CONTROLLER --- */
+    /* --- LOADER CONTROLLER --- */
     function showLoader(message = "Processing Request...") {
       const overlay = document.getElementById('globalLoaderOverlay');
       const textEl = document.getElementById('loaderStatusText');
@@ -1611,94 +1615,129 @@
     ];
     let currentFilter = 'All';
 
-    /* FILE UPLOAD & PREVIEW HANDLERS */
-    function handleFileUpload(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      if (file.size > 1.5 * 1024 * 1024) {
-        alert("File size exceeds 1.5MB. Please upload a smaller document or image.");
-        event.target.value = "";
-        return;
-      }
-
-      showLoader("Processing File Upload...");
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        document.getElementById('fileDataUrl').value = e.target.result;
-        const customInputVal = document.getElementById('customFileName').value.trim();
-        const finalFileName = customInputVal ? customInputVal : file.name;
-        document.getElementById('fileName').value = finalFileName;
-        document.getElementById('fileDisplayName').innerText = finalFileName;
-        document.getElementById('filePreviewContainer').style.display = 'flex';
-        hideLoader();
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function updateFileNameFromInput(val) {
-      const trimmed = val.trim();
-      const fileInput = document.getElementById('caseDocument');
-      let fallbackName = (fileInput.files && fileInput.files[0]) ? fileInput.files[0].name : "document.pdf";
-      const finalName = trimmed ? trimmed : fallbackName;
-      document.getElementById('fileName').value = finalName;
-      document.getElementById('fileDisplayName').innerText = finalName;
-    }
-
-    function removeAttachedDocument() {
-      document.getElementById('caseDocument').value = '';
-      document.getElementById('customFileName').value = '';
-      document.getElementById('fileDataUrl').value = '';
-      document.getElementById('fileName').value = '';
-      document.getElementById('filePreviewContainer').style.display = 'none';
-    }
-
-    function viewAttachedDocument() {
-      const fileDataUrl = document.getElementById('fileDataUrl').value;
-      const fileName = document.getElementById('fileName').value || "Attached Case Document";
-
-      if (!fileDataUrl) {
-        alert("No file uploaded to view.");
-        return;
-      }
-
-      openDocumentViewer(fileDataUrl, fileName);
-    }
-
-    function viewCaseDocumentById(caseId) {
-      const targetCase = cases.find(c => c.id === caseId);
-      if (targetCase && targetCase.fileDataUrl) {
-        openDocumentViewer(targetCase.fileDataUrl, targetCase.fileName || `Case_${targetCase.caseNo}_Document`);
-      } else {
-        alert("No attached document found for this case file.");
-      }
-    }
-
-    async function deleteCaseDocument(caseId) {
-      if (!confirm("Are you sure you want to delete the uploaded document for this case?")) return;
-      
+    /* --- PRINT INVOICE GENERATOR --- */
+    function printCaseInvoice(caseId) {
       const targetCase = cases.find(c => c.id === caseId);
       if (!targetCase) {
         alert("Case record not found.");
         return;
       }
 
-      targetCase.fileDataUrl = "";
-      targetCase.fileName = "";
+      let totalHearingFees = 0;
+      let totalOtherCharges = 0;
+      
+      let historyRows = '';
+      if (targetCase.history && targetCase.history.length > 0) {
+        targetCase.history.forEach((h, idx) => {
+          const hFee = parseFloat(h.fee) || 0;
+          const oFee = parseFloat(h.otherFee) || 0;
+          totalHearingFees += hFee;
+          totalOtherCharges += oFee;
 
-      showLoader("Deleting Uploaded Document...");
-      try {
-        await saveCaseToCloud(targetCase, false, true, true);
-        renderCases();
-        renderCourtSummaryBar();
-        hideLoader();
-        alert("🗑️ Uploaded document deleted successfully!");
-      } catch (error) {
-        hideLoader();
-        alert("Error deleting document: " + error.message);
+          historyRows += `
+            <tr>
+              <td>${idx + 1}</td>
+              <td>${h.date || 'N/A'}</td>
+              <td>${h.stage || 'Hearing'}</td>
+              <td>${h.notes || 'N/A'}</td>
+              <td style="text-align:right;">₹${hFee.toFixed(2)}</td>
+              <td style="text-align:right;">₹${oFee.toFixed(2)}</td>
+            </tr>
+          `;
+        });
+      } else {
+        historyRows = `<tr><td colspan="6" style="text-align:center; color:#64748b;">No hearing fee entries recorded yet.</td></tr>`;
       }
+
+      const grandTotal = totalHearingFees + totalOtherCharges;
+
+      const invoiceWindow = window.open('', '_blank');
+      invoiceWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Legal Fee Invoice - ${targetCase.caseNo}</title>
+          <style>
+            body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; margin: 0; padding: 20px; font-size: 13px; }
+            .invoice-header { border-bottom: 2px solid #1e293b; padding-bottom: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: flex-start; }
+            .invoice-header h2 { margin: 0; color: #0f766e; font-size: 1.3rem; }
+            .invoice-header p { margin: 2px 0; color: #475569; font-size: 0.9rem; }
+            .details-box { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px; border-radius: 6px; margin-bottom: 15px; }
+            .details-box div p { margin: 3px 0; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; font-size: 0.85rem; }
+            th { background-color: #f1f5f9; color: #1e293b; text-transform: uppercase; font-size: 0.78rem; }
+            .totals-section { margin-top: 15px; text-align: right; font-size: 0.95rem; }
+            .totals-section p { margin: 4px 0; }
+            .signature-area { margin-top: 40px; display: flex; justify-content: flex-end; }
+            .signature-box { text-align: center; border-top: 1px solid #1e293b; width: 220px; padding-top: 5px; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <div class="invoice-header">
+            <div>
+              <h2>Advocate Pt. Sudhanshu Kumar Tiwari</h2>
+              <p>Legal Counsel & Advocate Case Diary</p>
+            </div>
+            <div style="text-align: right;">
+              <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+              <p><strong>Invoice Ref:</strong> INV-${Math.floor(100000 + Math.random() * 900000)}</p>
+            </div>
+          </div>
+
+          <h3 style="border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; color: #1e293b; font-size: 1.05rem;">Case & Client Statement</h3>
+          
+          <div class="details-box">
+            <div>
+              <p><strong>Case Number / CNR:</strong> ${targetCase.caseNo}</p>
+              <p><strong>Parties:</strong> ${targetCase.parties}</p>
+              <p><strong>Court / Forum:</strong> ${targetCase.court}</p>
+            </div>
+            <div>
+              <p><strong>Client Name:</strong> ${targetCase.clientName || 'N/A'}</p>
+              <p><strong>Client Phone:</strong> ${targetCase.clientPhone || 'N/A'}</p>
+              <p><strong>Act & Section:</strong> ${targetCase.actSection || 'N/A'}</p>
+            </div>
+          </div>
+
+          <h3 style="font-size: 0.95rem; margin-top: 15px;">Hearing Fees & Charges Breakdown</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Hearing Date</th>
+                <th>Stage</th>
+                <th>Remarks / Proceedings</th>
+                <th style="text-align:right;">Hearing Fee</th>
+                <th style="text-align:right;">Stationary & Others</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${historyRows}
+            </tbody>
+          </table>
+
+          <div class="totals-section">
+            <p>Total Hearing Fees: <strong>₹${totalHearingFees.toFixed(2)}</strong></p>
+            <p>Total Stationary & Other Charges: <strong>₹${totalOtherCharges.toFixed(2)}</strong></p>
+            <p style="font-size: 1.1rem; color: #0f766e; margin-top: 6px;">Grand Total Due / Paid: <strong>₹${grandTotal.toFixed(2)}</strong></p>
+          </div>
+
+          <div class="signature-area">
+            <div class="signature-box">
+              (Advocate Pt. Sudhanshu Kumar Tiwari)
+            </div>
+          </div>
+          <script>
+            window.onload = function() { window.print(); }
+          <\/script>
+        </body>
+        </html>
+      `);
+      invoiceWindow.document.close();
     }
 
+    /* DOCUMENT VIEWER */
     function openDocumentViewer(dataUrl, fileName) {
       const viewerContent = document.getElementById('viewerContentArea');
       document.getElementById('viewerFileName').innerText = `📄 ${fileName}`;
@@ -1721,6 +1760,34 @@
     function closeDocumentViewer() {
       document.getElementById('documentViewerModal').style.display = 'none';
       document.getElementById('viewerContentArea').innerHTML = '';
+    }
+
+    function viewCaseAttachedDocument(caseId, docIdx) {
+      const targetCase = cases.find(c => c.id === caseId);
+      if (targetCase && targetCase.documents && targetCase.documents[docIdx]) {
+        const doc = targetCase.documents[docIdx];
+        openDocumentViewer(doc.dataUrl, doc.name);
+      } else {
+        alert("Document not found.");
+      }
+    }
+
+    async function deleteCaseAttachedDocument(caseId, docIdx) {
+      if (!confirm("Are you sure you want to delete this attached document?")) return;
+      const targetCase = cases.find(c => c.id === caseId);
+      if (!targetCase || !targetCase.documents) return;
+
+      targetCase.documents.splice(docIdx, 1);
+      showLoader("Deleting Document...");
+      try {
+        await saveCaseToCloud(targetCase, false, true, true);
+        renderCases();
+        hideLoader();
+        alert("🗑️ Document deleted successfully!");
+      } catch (err) {
+        hideLoader();
+        alert("Error deleting document: " + err.message);
+      }
     }
 
     /* TAB NAVIGATION CONTROL */
@@ -1814,7 +1881,7 @@
 
         saveAndRefresh();
       } catch (error) {
-        console.error("Error loading data from cloud: ", error);
+        console.error("Error loading data: ", error);
         alert("Cloud Error: " + error.message);
       } finally {
         hideLoader();
@@ -1838,8 +1905,7 @@
           nextDate: caseData.nextDate || "",
           stage: caseData.stage || "",
           causeNo: caseData.causeNo !== undefined && caseData.causeNo !== null ? String(caseData.causeNo) : "",
-          fileDataUrl: caseData.fileDataUrl || "",
-          fileName: caseData.fileName || "",
+          documents: Array.isArray(caseData.documents) ? caseData.documents : [],
           history: Array.isArray(caseData.history) ? caseData.history.map(h => ({
             date: h.date || "",
             stage: h.stage || "",
@@ -1854,7 +1920,7 @@
         await loadDataFromCloud(true);
         
         if (!suppressAlert) {
-          alert(isNew ? "✅ New Case registered successfully and reflected instantly!" : "✅ Case record updated successfully and reflected instantly!");
+          alert(isNew ? "✅ New Case registered successfully!" : "✅ Case record updated successfully!");
         }
       } catch (error) {
         alert("Error saving to cloud: " + error.message);
@@ -1950,22 +2016,11 @@
     function renderCourtDropdown(selectedCourt = '') {
       const courtSelect = document.getElementById('court');
       courtSelect.innerHTML = '';
-
-      if (courtOptions.length === 0) {
-        const option = document.createElement('option');
-        option.value = '';
-        option.text = '-- No court added --';
-        courtSelect.appendChild(option);
-        return;
-      }
-
       courtOptions.forEach(c => {
         const option = document.createElement('option');
         option.value = c;
         option.text = c;
-        if (c === selectedCourt) {
-          option.selected = true;
-        }
+        if (c === selectedCourt) option.selected = true;
         courtSelect.appendChild(option);
       });
     }
@@ -1973,22 +2028,11 @@
     function renderStatusDropdown(selectedStatus = '') {
       const statusSelect = document.getElementById('status');
       statusSelect.innerHTML = '';
-
-      if (statusOptions.length === 0) {
-        const option = document.createElement('option');
-        option.value = '';
-        option.text = '-- No status added --';
-        statusSelect.appendChild(option);
-        return;
-      }
-
       statusOptions.forEach(s => {
         const option = document.createElement('option');
         option.value = s;
         option.text = s;
-        if (s === selectedStatus) {
-          option.selected = true;
-        }
+        if (s === selectedStatus) option.selected = true;
         statusSelect.appendChild(option);
       });
     }
@@ -1996,22 +2040,11 @@
     function renderStageDropdown(selectedStage = '') {
       const stageSelect = document.getElementById('stage');
       stageSelect.innerHTML = '';
-
-      if (stageOptions.length === 0) {
-        const option = document.createElement('option');
-        option.value = '';
-        option.text = '-- No proceedings added --';
-        stageSelect.appendChild(option);
-        return;
-      }
-
       stageOptions.forEach(st => {
         const option = document.createElement('option');
         option.value = st;
         option.text = st;
-        if (st === selectedStage) {
-          option.selected = true;
-        }
+        if (st === selectedStage) option.selected = true;
         stageSelect.appendChild(option);
       });
     }
@@ -2022,7 +2055,7 @@
       
       statusOptions.forEach(s => {
         const isActive = currentFilter === s ? 'active' : '';
-        html += `<button class="btn-filter ${isActive}" id="filter-${s}" onclick="setFilter('${s}')">${s} <span class="badge" id="count-${s}">${0}</span></button>`;
+        html += `<button class="btn-filter ${isActive}" id="filter-${s}" onclick="setFilter('${s}')">${s} <span class="badge" id="count-${s}">0</span></button>`;
       });
 
       filterBar.innerHTML = html;
@@ -2034,21 +2067,17 @@
 
       courtOptions.forEach(courtName => {
         const courtCasesCount = cases.filter(c => c.court === courtName).length;
-
         const pill = document.createElement('a');
         pill.className = 'court-pill-link';
         pill.innerHTML = `${courtName} <span class="court-pill-badge">${courtCasesCount}</span>`;
         pill.onclick = () => openCourtCasesModal(courtName);
-
         container.appendChild(pill);
       });
     }
 
     function toggleWindowMinimize(elementId) {
       const windowEl = document.getElementById(elementId);
-      if (windowEl) {
-        windowEl.classList.toggle('minimized');
-      }
+      if (windowEl) windowEl.classList.toggle('minimized');
     }
 
     function toggleWindowMaximize(elementId) {
@@ -2107,7 +2136,7 @@
             return;
           }
 
-          if (confirm(`Are you sure you want to restore backup? This will sync ${parsed.cases.length} case records to your database.`)) {
+          if (confirm(`Restore backup and sync ${parsed.cases.length} case records?`)) {
             showLoader("Restoring Database Backup...");
 
             if (parsed.courtOptions) courtOptions = parsed.courtOptions;
@@ -2216,7 +2245,7 @@
       }
 
       if (activeCases.length === 0) {
-        container.innerHTML = `<p style="color:#64748b; font-size:0.9rem; text-align:center; padding: 1rem;">No cases scheduled for ${targetDate} matching filter.</p>`;
+        container.innerHTML = `<p style="color:#64748b; font-size:0.9rem; text-align:center; padding: 1rem;">No cases scheduled for ${targetDate}.</p>`;
         return;
       }
 
@@ -2244,8 +2273,9 @@
                 #${index + 1} — Case No: <span class="case-no-hyperlink" onclick="openAndCopyCaseNo('${c.caseNo}')">${c.caseNo}</span> | Parties: <strong>${c.parties}</strong>
               </label>
             </div>
-            <div style="font-size:0.8rem; color:#475569;">
+            <div style="font-size:0.8rem; color:#475569; display:flex; gap:0.5rem; align-items:center;">
               Court: <strong>${c.court}</strong> | Client: <strong>${c.clientName || 'N/A'}</strong>
+              <button type="button" class="btn-action btn-invoice" style="padding:0.2rem 0.5rem; font-size:0.75rem;" onclick="printCaseInvoice('${c.id}')">🖨️ Invoice</button>
             </div>
           </div>
 
@@ -2299,10 +2329,7 @@
       if (!card) return;
 
       const targetCase = cases.find(c => c.id === caseId);
-      if (!targetCase) {
-        alert("Case record not found.");
-        return;
-      }
+      if (!targetCase) return;
 
       const currentDate = document.getElementById('bulkLogDate').value;
       const statusVal = card.querySelector('.logbook-status').value;
@@ -2312,22 +2339,17 @@
       
       const stageSelectEl = card.querySelector('.logbook-stage');
       const stageCustomEl = card.querySelector('.logbook-stage-custom');
-      let stageVal = '';
-      if (stageSelectEl.value === 'CUSTOM') {
-        stageVal = stageCustomEl.value.trim();
-      } else {
-        stageVal = stageSelectEl.value;
-      }
+      let stageVal = stageSelectEl.value === 'CUSTOM' ? stageCustomEl.value.trim() : stageSelectEl.value;
 
       const notesVal = card.querySelector('.logbook-notes').value.trim();
       const finalNotes = notesVal || stageVal || 'Hearing outcome updated';
 
       if (!nextDateVal) {
-        alert("Please provide a Next Hearing Date for this case before forwarding.");
+        alert("Please provide a Next Hearing Date before forwarding.");
         return;
       }
 
-      if (!confirm(`Are you sure you want to update and forward case No "${targetCase.caseNo}" to ${nextDateVal}?`)) return;
+      if (!confirm(`Forward case No "${targetCase.caseNo}" to ${nextDateVal}?`)) return;
 
       showLoader("Updating & Forwarding Case...");
       try {
@@ -2366,7 +2388,7 @@
         return;
       }
 
-      if (!confirm(`Are you sure you want to update and forward ${checkedCards.length} selected case(s)?`)) return;
+      if (!confirm(`Update and forward ${checkedCards.length} selected case(s)?`)) return;
 
       showLoader("Updating & Forwarding Cases...");
       try {
@@ -2375,13 +2397,7 @@
         const masterNotesSelect = document.getElementById('masterNotesSelect').value;
         const masterNotesText = document.getElementById('masterNotesText').value.trim();
 
-        let masterProceedings = '';
-        if (masterNotesSelect === 'CUSTOM') {
-          masterProceedings = masterNotesText;
-        } else {
-          masterProceedings = masterNotesSelect;
-        }
-
+        let masterProceedings = masterNotesSelect === 'CUSTOM' ? masterNotesText : masterNotesSelect;
         const currentDate = document.getElementById('bulkLogDate').value;
 
         for (const card of checkedCards) {
@@ -2396,12 +2412,7 @@
           
           const stageSelectEl = card.querySelector('.logbook-stage');
           const stageCustomEl = card.querySelector('.logbook-stage-custom');
-          let stageVal = '';
-          if (stageSelectEl.value === 'CUSTOM') {
-            stageVal = stageCustomEl.value.trim();
-          } else {
-            stageVal = stageSelectEl.value;
-          }
+          let stageVal = stageSelectEl.value === 'CUSTOM' ? stageCustomEl.value.trim() : stageSelectEl.value;
 
           const notesVal = card.querySelector('.logbook-notes').value.trim();
           const finalNotes = notesVal || masterProceedings || stageVal || 'Hearing outcome updated';
@@ -2445,7 +2456,7 @@
       }
     }
 
-    /* --- ADDITIONAL MODALS & LOGIC --- */
+    /* --- CASE LIST MODAL & PRINTING --- */
     function openCaseListModal() {
       const todayStr = new Date().toISOString().split('T')[0];
       document.getElementById('caseListDate').value = todayStr;
@@ -2477,9 +2488,7 @@
       const groupedByCourt = {};
       activeCases.forEach(c => {
         const courtName = c.court || 'Uncategorized Court';
-        if (!groupedByCourt[courtName]) {
-          groupedByCourt[courtName] = [];
-        }
+        if (!groupedByCourt[courtName]) groupedByCourt[courtName] = [];
         groupedByCourt[courtName].push(c);
       });
 
@@ -2493,8 +2502,8 @@
           const currentCauseVal = c.causeNo || (index + 1);
           partyRows += `
             <div class="party-item-row" data-case-id="${c.id}">
-              <div class="party-item-name">${c.parties} <br><small style="color:#64748b;">Case No: <span class="case-no-hyperlink" onclick="openAndCopyCaseNo('${c.caseNo}')" title="Click to copy & search">${c.caseNo}</span></small></div>
-              <input type="text" class="cause-no-input" value="${currentCauseVal}" placeholder="Cause Sl. No" title="Enter Cause List Sl. No" onchange="updateCaseCauseNo('${c.id}', this.value)">
+              <div class="party-item-name">${c.parties} <br><small style="color:#64748b;">Case No: <span class="case-no-hyperlink" onclick="openAndCopyCaseNo('${c.caseNo}')">${c.caseNo}</span></small></div>
+              <input type="text" class="cause-no-input" value="${currentCauseVal}" placeholder="Cause Sl. No" onchange="updateCaseCauseNo('${c.id}', this.value)">
             </div>
           `;
         });
@@ -2510,7 +2519,6 @@
             ${partyRows}
           </div>
         `;
-
         container.appendChild(accordionGroup);
       });
     }
@@ -2536,17 +2544,13 @@
       document.querySelectorAll('.party-item-row').forEach(row => {
         const caseId = row.getAttribute('data-case-id');
         const causeVal = row.querySelector('.cause-no-input').value.trim();
-        if (caseId) {
-          causeNoMap[caseId] = causeVal;
-        }
+        if (caseId) causeNoMap[caseId] = causeVal;
       });
 
       const groupedByCourt = {};
       activeCases.forEach(c => {
         const courtName = c.court || 'Uncategorized Court';
-        if (!groupedByCourt[courtName]) {
-          groupedByCourt[courtName] = [];
-        }
+        if (!groupedByCourt[courtName]) groupedByCourt[courtName] = [];
         groupedByCourt[courtName].push(c);
       });
 
@@ -2555,7 +2559,6 @@
       let printBodyHtml = '';
       sortedCourts.forEach(courtName => {
         const courtCases = groupedByCourt[courtName];
-
         courtCases.sort((a, b) => {
           const slA = parseFloat(causeNoMap[a.id] || a.causeNo || 0);
           const slB = parseFloat(causeNoMap[b.id] || b.causeNo || 0);
@@ -2566,21 +2569,17 @@
         courtCases.forEach((c, idx) => {
           const causeSl = causeNoMap[c.id] || c.causeNo || (idx + 1);
           caseListItems += `
-            <div class="print-party-item">
-              <span class="cause-tag">Sl #${causeSl}</span>
-              <div class="party-info">
-                <div class="party-title">${c.parties}</div>
-              </div>
+            <div style="display:flex; align-items:flex-start; margin-bottom:4px; font-size:8.5px;">
+              <span style="background:#0f766e; color:white; padding:1px 4px; border-radius:3px; font-weight:bold; margin-right:4px; min-width:20px; text-align:center;">#${causeSl}</span>
+              <div><strong>${c.parties}</strong> <span style="color:#475569;">(${c.caseNo})</span></div>
             </div>
           `;
         });
 
         printBodyHtml += `
-          <div class="print-court-section">
-            <div class="print-court-title">🏛️ ${courtName}</div>
-            <div class="print-parties-list">
-              ${caseListItems}
-            </div>
+          <div style="margin-bottom:8px; border:1px solid #cbd5e1; padding:6px; border-radius:4px;">
+            <div style="font-weight:bold; font-size:9.5px; color:#1e293b; border-bottom:1px solid #cbd5e1; padding-bottom:2px; margin-bottom:4px;">🏛️ ${courtName}</div>
+            ${caseListItems}
           </div>
         `;
       });
@@ -2590,101 +2589,72 @@
         <!DOCTYPE html>
         <html>
         <head>
-          <title>Case List - ${targetDate}</title>
+          <title>Cause List - ${targetDate}</title>
           <style>
             @page { size: A4 portrait; margin: 6mm; }
-            body { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: 8.5px; height: 100vh; overflow: hidden; }
-            .header { border-bottom: 1.5px solid #1e293b; padding-bottom: 2px; margin-bottom: 6px; }
-            .header h1 { font-size: 11px; margin: 0 0 1px 0; text-transform: uppercase; }
-            .header small { font-size: 8.5px; color: #475569; }
-            .columns-wrapper { column-count: 2; column-gap: 8px; column-fill: auto; height: calc(100vh - 35px); width: 100%; box-sizing: border-box; }
-            .print-court-section { break-inside: avoid; page-break-inside: avoid; margin-bottom: 6px; border: 1px solid #cbd5e1; border-radius: 3px; overflow: hidden; display: inline-block; width: 100%; box-sizing: border-box; }
-            .print-court-title { background: #1e293b; color: #ffffff; font-weight: bold; font-size: 9.5px; padding: 2px 5px; }
-            .print-parties-list { padding: 2px 5px; }
-            .print-party-item { display: flex; align-items: flex-start; gap: 5px; padding: 2px 0; border-bottom: 1px dashed #e2e8f0; break-inside: avoid; page-break-inside: avoid; }
-            .print-party-item:last-child { border-bottom: none; }
-            .cause-tag { background: #0f766e; color: white; font-weight: bold; padding: 1px 3px; border-radius: 2px; font-size: 8px; min-width: 32px; text-align: center; margin-top: 1px; }
-            .party-info { flex: 1; }
-            .party-title { font-weight: 600; font-size: 8.5px; line-height: 1.15; }
-            @media print { button { display: none; } }
+            body { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: 8.5px; }
+            h1 { font-size: 11px; margin: 0 0 2px 0; text-transform: uppercase; }
           </style>
         </head>
         <body>
-          <div class="header">
-            <h1>Cause List Parties - ${targetDate}</h1>
-            <small>Total Scheduled Cases: ${activeCases.length}</small>
+          <div style="border-bottom: 1.5px solid #1e293b; padding-bottom: 3px; margin-bottom: 6px; display:flex; justify-content:space-between; align-items:center;">
+            <h1>Daily Cause List — Pt. Sudhanshu Kumar Tiwari</h1>
+            <div><strong>Date:</strong> ${targetDate}</div>
           </div>
-          <div class="columns-wrapper">${printBodyHtml}</div>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            ${printBodyHtml}
+          </div>
+          <script>
+            window.onload = function() { window.print(); }
+          <\/script>
         </body>
         </html>
       `);
       printWindow.document.close();
-      printWindow.focus();
-      setTimeout(() => { printWindow.print(); }, 250);
     }
 
+    /* --- ADDITIONAL MODALS & LOGIC --- */
     function openCourtCasesModal(courtName) {
+      document.getElementById('courtModalHeaderTitle').innerText = `Cases under Court: ${courtName}`;
+      const bodyContainer = document.getElementById('courtCasesModalBody');
       const filtered = cases.filter(c => c.court === courtName);
-      document.getElementById('courtModalHeaderTitle').innerText = `Cases under ${courtName}`;
-      
-      const body = document.getElementById('courtCasesModalBody');
-      body.innerHTML = '';
 
       if (filtered.length === 0) {
-        body.innerHTML = `<p style="color:#64748b; font-size:0.9rem;">No cases registered under this court/judge.</p>`;
-      } else {
-        let tableHtml = `
-          <table>
-            <thead>
-              <tr>
-                <th>Next Date</th>
-                <th>Status</th>
-                <th>Case No</th>
-                <th>Parties</th>
-                <th>Act & Section</th>
-                <th>Dispute Property</th>
-                <th>Client Details</th>
-                <th>Stage</th>
-                <th>Doc</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-        `;
-
-        filtered.sort((a, b) => new Date(b.nextDate) - new Date(a.nextDate)).forEach(c => {
-          const docBtn = c.fileDataUrl ? `
-            <div style="display:flex; gap:0.3rem;">
-              <button class="btn-action btn-print" onclick="viewCaseDocumentById('${c.id}')" title="View File">👁️</button>
-              <button class="btn-action btn-delete" onclick="deleteCaseDocument('${c.id}')" title="Delete File">🗑️</button>
-            </div>
-          ` : '<span style="color:#94a3b8; font-size:0.8rem;">None</span>';
-
-          tableHtml += `
-            <tr>
-              <td>${c.nextDate}</td>
-              <td><span class="status-tag">${c.status || 'Ongoing'}</span></td>
-              <td><span class="case-no-hyperlink" onclick="openAndCopyCaseNo('${c.caseNo}')" title="Click to copy & search">${c.caseNo}</span></td>
-              <td><strong>${c.parties}</strong></td>
-              <td>${c.actSection || 'NA'}</td>
-              <td>${c.disputeProperty || 'NA'}</td>
-              <td>${getClientDisplay(c)}</td>
-              <td>${c.stage || 'NA'}</td>
-              <td>${docBtn}</td>
-              <td>
-                <div class="actions">
-                  <button class="btn-action btn-history" onclick="openHistoryModal('${c.id}')">History</button>
-                  <button class="btn-action btn-edit" onclick="editCase('${c.id}')">Edit</button>
-                </div>
-              </td>
-            </tr>
-          `;
-        });
-
-        tableHtml += `</tbody></table>`;
-        body.innerHTML = tableHtml;
+        bodyContainer.innerHTML = `<p style="color:#64748b;">No cases found under ${courtName}.</p>`;
+        document.getElementById('courtCasesModal').style.display = 'flex';
+        return;
       }
 
+      let html = `<table><thead><tr><th>Case No / CNR</th><th>Parties</th><th>Client</th><th>Next Date</th><th>Status</th><th>Actions</th></tr></thead><tbody>`;
+      filtered.forEach(c => {
+        let docsHtml = '';
+        if (c.documents && c.documents.length > 0) {
+          c.documents.forEach((doc, dIdx) => {
+            docsHtml += `<button type="button" class="btn-action btn-print" style="margin:2px;" onclick="viewCaseAttachedDocument('${c.id}', ${dIdx})">👁️ ${doc.name}</button>`;
+          });
+        } else {
+          docsHtml = '<small style="color:#64748b;">No docs</small>';
+        }
+
+        html += `
+          <tr>
+            <td><span class="case-no-hyperlink" onclick="openAndCopyCaseNo('${c.caseNo}')">${c.caseNo}</span></td>
+            <td>${c.parties}</td>
+            <td>${getClientDisplay(c)}</td>
+            <td>${c.nextDate || 'N/A'}</td>
+            <td><span class="status-tag">${c.status || 'Ongoing'}</span></td>
+            <td>
+              <div class="actions">
+                <button type="button" class="btn-action btn-invoice" onclick="printCaseInvoice('${c.id}')">🖨️ Invoice</button>
+                <button type="button" class="btn-action btn-history" onclick="openHistoryModal('${c.id}')">📖 History</button>
+                ${docsHtml}
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+      html += `</tbody></table>`;
+      bodyContainer.innerHTML = html;
       document.getElementById('courtCasesModal').style.display = 'flex';
     }
 
@@ -2692,7 +2662,373 @@
       document.getElementById('courtCasesModal').style.display = 'none';
     }
 
-    /* --- CALENDAR GENERATION WITH COURT-WISE POPUP --- */
+    function expandAllCourts() {
+      document.querySelectorAll('.court-accordion-group').forEach(el => el.classList.add('expanded'));
+    }
+
+    function collapseAllCourts() {
+      document.querySelectorAll('.court-accordion-group').forEach(el => el.classList.remove('expanded'));
+    }
+
+    function toggleAccordion(headerEl) {
+      headerEl.parentElement.classList.toggle('expanded');
+    }
+
+    /* --- STANDARD CRUD & FORM SUBMISSION --- */
+    function handleCaseSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('caseId').value || db.collection('cases').doc().id;
+      const status = document.getElementById('status').value;
+      const caseNo = document.getElementById('caseNo').value.trim();
+      const court = document.getElementById('court').value;
+      const parties = document.getElementById('parties').value.trim();
+      const actSection = document.getElementById('actSection').value.trim() || 'NA';
+      const disputeProperty = document.getElementById('disputeProperty').value.trim() || 'NA';
+      const clientName = document.getElementById('clientName').value.trim() || 'NA';
+      const clientPhone = document.getElementById('clientPhone').value.trim() || 'NA';
+      const nextDate = document.getElementById('nextDate').value;
+      const stage = document.getElementById('stage').value;
+
+      const existingCase = cases.find(c => c.id === id);
+      const history = existingCase ? existingCase.history || [] : [];
+      const causeNo = existingCase ? existingCase.causeNo || "" : "";
+
+      const newCaseObj = {
+        id,
+        status,
+        caseNo,
+        court,
+        parties,
+        actSection,
+        disputeProperty,
+        clientName,
+        clientPhone,
+        nextDate,
+        stage,
+        causeNo,
+        documents: tempCaseDocuments,
+        history
+      };
+
+      const isNew = !existingCase;
+      saveCaseToCloud(newCaseObj, isNew).then(() => {
+        resetForm();
+        switchTab('activeCasesTab', document.querySelector('.nav-tab-btn:nth-child(1)'));
+      });
+    }
+
+    function resetForm() {
+      document.getElementById('caseForm').reset();
+      document.getElementById('caseId').value = '';
+      setDefaultDate();
+      tempCaseDocuments = [];
+      renderTempDocumentsList();
+    }
+
+    function renderCases() {
+      const searchVal = document.getElementById('search').value.toLowerCase();
+      const container = document.getElementById('courtAccordionContainer');
+      container.innerHTML = '';
+
+      let filtered = cases;
+      if (currentFilter !== 'All') {
+        filtered = filtered.filter(c => c.status === currentFilter);
+      }
+
+      if (searchVal) {
+        filtered = filtered.filter(c => 
+          (c.caseNo && c.caseNo.toLowerCase().includes(searchVal)) ||
+          (c.parties && c.parties.toLowerCase().includes(searchVal)) ||
+          (c.clientName && c.clientName.toLowerCase().includes(searchVal)) ||
+          (c.clientPhone && c.clientPhone.toLowerCase().includes(searchVal)) ||
+          (c.court && c.court.toLowerCase().includes(searchVal)) ||
+          (c.actSection && c.actSection.toLowerCase().includes(searchVal)) ||
+          (c.disputeProperty && c.disputeProperty.toLowerCase().includes(searchVal)) ||
+          (c.nextDate && c.nextDate.includes(searchVal))
+        );
+      }
+
+      const groupedByCourt = {};
+      filtered.forEach(c => {
+        const courtName = c.court || 'Uncategorized Court';
+        if (!groupedByCourt[courtName]) groupedByCourt[courtName] = [];
+        groupedByCourt[courtName].push(c);
+      });
+
+      const sortedCourts = Object.keys(groupedByCourt).sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}));
+
+      if (sortedCourts.length === 0) {
+        container.innerHTML = '<p style="color:#64748b; text-align:center; padding:1.5rem;">No cases found.</p>';
+        return;
+      }
+
+      sortedCourts.forEach(courtName => {
+        const courtCases = groupedByCourt[courtName];
+        
+        let rowsHtml = '';
+        courtCases.forEach(c => {
+          let docsHtml = '';
+          if (c.documents && c.documents.length > 0) {
+            c.documents.forEach((doc, dIdx) => {
+              docsHtml += `
+                <div style="display:inline-flex; align-items:center; gap:2px; background:#e0f2fe; padding:2px 6px; border-radius:4px; margin:2px; font-size:0.75rem;">
+                  <span style="cursor:pointer; color:#0284c7; font-weight:bold;" onclick="viewCaseAttachedDocument('${c.id}', ${dIdx})">👁️ ${doc.name}</span>
+                  <span style="cursor:pointer; color:#dc2626; margin-left:4px;" onclick="deleteCaseAttachedDocument('${c.id}', ${dIdx})">✕</span>
+                </div>
+              `;
+            });
+          } else {
+            docsHtml = '<small style="color:#64748b;">No attached docs</small>';
+          }
+
+          rowsHtml += `
+            <tr>
+              <td><span class="case-no-hyperlink" onclick="openAndCopyCaseNo('${c.caseNo}')">${c.caseNo}</span></td>
+              <td><strong>${c.parties}</strong><br><small style="color:#475569;">Act/Sec: ${c.actSection || 'N/A'}</small></td>
+              <td>${getClientDisplay(c)}</td>
+              <td><strong>${c.nextDate || 'N/A'}</strong></td>
+              <td>${c.stage || 'N/A'}</td>
+              <td><span class="status-tag">${c.status || 'Ongoing'}</span><br>${docsHtml}</td>
+              <td>
+                <div class="actions">
+                  <button type="button" class="btn-action btn-invoice" onclick="printCaseInvoice('${c.id}')">🖨️ Invoice</button>
+                  <button type="button" class="btn-action btn-history" onclick="openHistoryModal('${c.id}')">📖 History</button>
+                  <button type="button" class="btn-action btn-edit" onclick="editCase('${c.id}')">✎ Edit</button>
+                  <button type="button" class="btn-action btn-delete" onclick="deleteCaseFromCloud('${c.id}')">🗑️ Delete</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+
+        const accordionGroup = document.createElement('div');
+        accordionGroup.className = 'court-accordion-group expanded';
+        accordionGroup.innerHTML = `
+          <div class="court-accordion-header" onclick="toggleAccordion(this)">
+            <span>🏛️ ${courtName} <span class="badge" style="background:#0284c7; color:white;">${courtCases.length}</span></span>
+            <span class="accordion-arrow">▼</span>
+          </div>
+          <div class="court-accordion-content">
+            <table>
+              <thead>
+                <tr>
+                  <th>Case No</th>
+                  <th>Parties / Act</th>
+                  <th>Client</th>
+                  <th>Next Date</th>
+                  <th>Stage</th>
+                  <th>Status & Docs</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rowsHtml}
+              </tbody>
+            </table>
+          </div>
+        `;
+        container.appendChild(accordionGroup);
+      });
+    }
+
+    function editCase(id) {
+      const targetCase = cases.find(c => c.id === id);
+      if (!targetCase) return;
+
+      document.getElementById('caseId').value = targetCase.id;
+      renderStatusDropdown(targetCase.status);
+      document.getElementById('caseNo').value = targetCase.caseNo || '';
+      renderCourtDropdown(targetCase.court);
+      document.getElementById('parties').value = targetCase.parties || '';
+      document.getElementById('actSection').value = targetCase.actSection || 'NA';
+      document.getElementById('disputeProperty').value = targetCase.disputeProperty || 'NA';
+      document.getElementById('clientName').value = targetCase.clientName || 'NA';
+      document.getElementById('clientPhone').value = targetCase.clientPhone || 'NA';
+      document.getElementById('nextDate').value = targetCase.nextDate || '';
+      renderStageDropdown(targetCase.stage);
+
+      tempCaseDocuments = targetCase.documents ? [...targetCase.documents] : [];
+      renderTempDocumentsList();
+
+      switchTab('registerCaseTab', document.querySelector('.nav-tab-btn:nth-child(2)'));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function setFilter(status) {
+      currentFilter = status;
+      renderFilterBar();
+      renderCases();
+    }
+
+    function saveAndRefresh() {
+      renderCourtDropdown();
+      renderStatusDropdown();
+      renderStageDropdown();
+      renderFilterBar();
+      renderCourtSummaryBar();
+      
+      statusOptions.forEach(s => {
+        const count = cases.filter(c => c.status === s).length;
+        const badge = document.getElementById(`count-${s}`);
+        if (badge) badge.innerText = count;
+      });
+      const allCountBadge = document.getElementById(`count-All`);
+      if (allCountBadge) allCountBadge.innerText = cases.length;
+
+      renderCases();
+      if (document.getElementById('calendarTabPane').style.display !== 'none') {
+        renderCalendar();
+      }
+    }
+
+    /* --- HISTORY & HEARING MODAL --- */
+    function openHistoryModal(caseId) {
+      const targetCase = cases.find(c => c.id === caseId);
+      if (!targetCase) return;
+
+      document.getElementById('modalCaseId').value = targetCase.id;
+      document.getElementById('modalCaseTitle').innerText = `Hearing History — ${targetCase.caseNo} (${targetCase.parties})`;
+      
+      const todayStr = new Date().toISOString().split('T')[0];
+      document.getElementById('hearingDate').value = targetCase.nextDate || todayStr;
+      document.getElementById('newNextDate').value = '';
+      document.getElementById('hearingFee').value = '';
+      document.getElementById('otherCourtFee').value = '';
+      document.getElementById('hearingStage').value = targetCase.stage || '';
+      document.getElementById('hearingNotes').value = '';
+      document.getElementById('editingHearingIndex').value = '-1';
+      document.getElementById('hearingFormHeading').innerText = '+ Record Hearing Outcome & Set Next Date';
+      document.getElementById('hearingSubmitBtn').innerText = 'Log Hearing & Update Case';
+      document.getElementById('cancelHearingEditBtn').style.display = 'none';
+
+      renderHistoryTimeline(targetCase);
+      document.getElementById('historyModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('historyModal').style.display = 'none';
+    }
+
+    function renderHistoryTimeline(targetCase) {
+      const timeline = document.getElementById('historyTimeline');
+      timeline.innerHTML = '';
+
+      if (!targetCase.history || targetCase.history.length === 0) {
+        timeline.innerHTML = '<p style="color:#64748b; font-size:0.9rem;">No past hearing history recorded yet.</p>';
+        return;
+      }
+
+      targetCase.history.forEach((h, index) => {
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        item.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <strong style="color:var(--primary); font-size:0.9rem;">Hearing Date: ${h.date}</strong>
+            <div style="font-size:0.8rem; color:#475569;">
+              Fee: <strong>₹${h.fee || 0}</strong> | Other Chrg: <strong>₹${h.otherFee || 0}</strong>
+            </div>
+          </div>
+          <div style="margin-top:0.3rem; font-size:0.85rem;">Stage: <strong>${h.stage || 'N/A'}</strong></div>
+          <div style="margin-top:0.3rem; font-size:0.88rem;">Proceedings / Notes: ${h.notes}</div>
+          <div style="margin-top:0.3rem; font-size:0.82rem; color:#0284c7;">Next Assigned Date: <strong>${h.assignedNextDate || 'N/A'}</strong></div>
+          <div style="display:flex; gap:0.4rem; margin-top:0.5rem;">
+            <button type="button" class="btn-action btn-edit btn-sm" onclick="editHearingRecord('${targetCase.id}', ${index})">✎ Edit Hearing</button>
+            <button type="button" class="btn-action btn-delete btn-sm" onclick="deleteHearingRecord('${targetCase.id}', ${index})">🗑️ Delete</button>
+          </div>
+        `;
+        timeline.appendChild(item);
+      });
+    }
+
+    async function handleHearingSubmit(e) {
+      e.preventDefault();
+      const caseId = document.getElementById('modalCaseId').value;
+      const targetCase = cases.find(c => c.id === caseId);
+      if (!targetCase) return;
+
+      const hearingDate = document.getElementById('hearingDate').value;
+      const newNextDate = document.getElementById('newNextDate').value;
+      const fee = parseFloat(document.getElementById('hearingFee').value) || 0;
+      const otherFee = parseFloat(document.getElementById('otherCourtFee').value) || 0;
+      const stage = document.getElementById('hearingStage').value.trim();
+      const notes = document.getElementById('hearingNotes').value.trim();
+      const editingIndex = parseInt(document.getElementById('editingHearingIndex').value);
+
+      if (!targetCase.history) targetCase.history = [];
+
+      const hearingRecord = {
+        date: hearingDate,
+        stage: stage || 'Hearing',
+        notes: notes,
+        assignedNextDate: newNextDate,
+        fee: fee,
+        otherFee: otherFee
+      };
+
+      if (editingIndex >= 0 && editingIndex < targetCase.history.length) {
+        targetCase.history[editingIndex] = hearingRecord;
+      } else {
+        targetCase.history.push(hearingRecord);
+      }
+
+      targetCase.nextDate = newNextDate;
+      if (stage) targetCase.stage = stage;
+
+      showLoader("Saving Hearing Outcome...");
+      await saveCaseToCloud(targetCase, false, true, true);
+      hideLoader();
+
+      openHistoryModal(caseId);
+      renderCases();
+      alert("✅ Hearing outcome recorded successfully!");
+    }
+
+    function editHearingRecord(caseId, index) {
+      const targetCase = cases.find(c => c.id === caseId);
+      if (!targetCase || !targetCase.history[index]) return;
+
+      const h = targetCase.history[index];
+      document.getElementById('hearingDate').value = h.date || '';
+      document.getElementById('newNextDate').value = h.assignedNextDate || '';
+      document.getElementById('hearingFee').value = h.fee || '';
+      document.getElementById('otherCourtFee').value = h.otherFee || '';
+      document.getElementById('hearingStage').value = h.stage || '';
+      document.getElementById('hearingNotes').value = h.notes || '';
+      document.getElementById('editingHearingIndex').value = index;
+      document.getElementById('hearingFormHeading').innerText = `✏️ Edit Hearing Record #${index + 1}`;
+      document.getElementById('hearingSubmitBtn').innerText = 'Update Hearing Record';
+      document.getElementById('cancelHearingEditBtn').style.display = 'inline-block';
+    }
+
+    function resetHearingForm() {
+      const caseId = document.getElementById('modalCaseId').value;
+      const targetCase = cases.find(c => c.id === caseId);
+      if (targetCase) {
+        document.getElementById('hearingForm').reset();
+        document.getElementById('editingHearingIndex').value = '-1';
+        document.getElementById('hearingFormHeading').innerText = '+ Record Hearing Outcome & Set Next Date';
+        document.getElementById('hearingSubmitBtn').innerText = 'Log Hearing & Update Case';
+        document.getElementById('cancelHearingEditBtn').style.display = 'none';
+        const todayStr = new Date().toISOString().split('T')[0];
+        document.getElementById('hearingDate').value = targetCase.nextDate || todayStr;
+      }
+    }
+
+    async function deleteHearingRecord(caseId, index) {
+      if (!confirm("Are you sure you want to delete this hearing record?")) return;
+      const targetCase = cases.find(c => c.id === caseId);
+      if (!targetCase || !targetCase.history) return;
+
+      targetCase.history.splice(index, 1);
+      showLoader("Deleting Hearing Record...");
+      await saveCaseToCloud(targetCase, false, true, true);
+      hideLoader();
+
+      openHistoryModal(caseId);
+      renderCases();
+    }
+
+    /* --- CALENDAR LOGIC --- */
     function renderCalendar() {
       const year = currentCalDate.getFullYear();
       const month = currentCalDate.getMonth();
@@ -2706,96 +3042,71 @@
       const daysContainer = document.getElementById('calendarDays');
       daysContainer.innerHTML = '';
 
-      const todayStr = new Date().toISOString().split('T')[0];
-
       for (let i = 0; i < firstDayIndex; i++) {
-        const emptyCell = document.createElement('div');
-        emptyCell.className = 'calendar-day empty';
-        daysContainer.appendChild(emptyCell);
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'calendar-day empty';
+        daysContainer.appendChild(emptyDiv);
       }
 
-      for (let d = 1; d <= totalDays; d++) {
-        const dayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        const dayCases = cases.filter(c => c.nextDate === dayStr);
+      const todayStr = new Date().toISOString().split('T')[0];
 
-        const dayCell = document.createElement('div');
-        dayCell.className = 'calendar-day';
-        if (dayStr === todayStr) dayCell.classList.add('today');
+      for (let day = 1; day <= totalDays; day++) {
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'calendar-day';
 
-        let cellHtml = `<span class="day-num">${d}</span>`;
+        const formattedMonth = String(month + 1).padStart(2, '0');
+        const formattedDay = String(day).padStart(2, '0');
+        const dateStr = `${year}-${formattedMonth}-${formattedDay}`;
 
-        if (dayCases.length > 0) {
-          dayCell.classList.add('has-cases');
-          
-          // Group cases by court for this day
-          const grouped = {};
-          dayCases.forEach(c => {
-            const ct = c.court || 'Other Court';
-            if (!grouped[ct]) grouped[ct] = [];
-            grouped[ct].push(c);
-          });
-
-          // Render a hyperlink for each court on that day
-          for (const [courtName, courtCasesList] of Object.entries(grouped)) {
-            cellHtml += `<a class="cause-link" onclick="openCalendarCourtDayModal('${dayStr}', '${courtName.replace(/'/g, "\\'")}')">${courtName} (${courtCasesList.length})</a>`;
-          }
+        if (dateStr === todayStr) {
+          dayDiv.classList.add('today');
         }
 
-        dayCell.innerHTML = cellHtml;
-        daysContainer.appendChild(dayCell);
+        const dayCases = cases.filter(c => c.nextDate === dateStr);
+        if (dayCases.length > 0) {
+          dayDiv.classList.add('has-cases');
+        }
+
+        dayDiv.innerHTML = `<span class="day-num">${day}</span>`;
+
+        if (dayCases.length > 0) {
+          const causeLink = document.createElement('a');
+          causeLink.className = 'cause-link';
+          causeLink.innerText = `${dayCases.length} Case${dayCases.length > 1 ? 's' : ''}`;
+          causeLink.onclick = () => openCalendarSummaryModal(dateStr, dayCases);
+          dayDiv.appendChild(causeLink);
+        }
+
+        daysContainer.appendChild(dayDiv);
       }
     }
 
-    function changeMonth(dir) {
-      currentCalDate.setMonth(currentCalDate.getMonth() + dir);
+    function changeMonth(direction) {
+      currentCalDate.setMonth(currentCalDate.getMonth() + direction);
       renderCalendar();
     }
 
-    function openCalendarCourtDayModal(dateStr, courtName) {
-      const matchingCases = cases.filter(c => c.nextDate === dateStr && c.court === courtName);
-      
-      document.getElementById('calendarModalTitle').innerText = `Cause List: ${courtName} (${dateStr})`;
-      
-      const body = document.getElementById('calendarModalBody');
-      let tableHtml = `
-        <p style="margin-top:0; color:#475569;">Total cases scheduled for <strong>${courtName}</strong> on <strong>${dateStr}</strong>:</p>
-        <table>
-          <thead>
-            <tr>
-              <th>Status</th>
-              <th>Case No</th>
-              <th>Parties</th>
-              <th>Client Details</th>
-              <th>Stage</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-      `;
+    function openCalendarSummaryModal(dateStr, dayCases) {
+      document.getElementById('calendarModalTitle').innerText = `Cause List Summary for ${dateStr}`;
+      const bodyEl = document.getElementById('calendarModalBody');
 
-      matchingCases.forEach(c => {
-        tableHtml += `
+      let html = `<p style="font-size:0.9rem; color:#475569;">Total cases scheduled: <strong>${dayCases.length}</strong></p><table><thead><tr><th>Case No</th><th>Parties</th><th>Court</th><th>Client</th><th>Stage</th></tr></thead><tbody>`;
+      dayCases.forEach(c => {
+        html += `
           <tr>
-            <td><span class="status-tag">${c.status || 'Ongoing'}</span></td>
             <td><span class="case-no-hyperlink" onclick="openAndCopyCaseNo('${c.caseNo}')">${c.caseNo}</span></td>
-            <td><strong>${c.parties}</strong></td>
+            <td>${c.parties}</td>
+            <td>${c.court}</td>
             <td>${getClientDisplay(c)}</td>
-            <td>${c.stage || 'NA'}</td>
-            <td>
-              <div class="actions">
-                <button class="btn-action btn-history" onclick="openHistoryModal('${c.id}')">History</button>
-                <button class="btn-action btn-edit" onclick="closeCalendarSummaryModal(); editCase('${c.id}')">Edit</button>
-              </div>
-            </td>
+            <td>${c.stage || 'N/A'}</td>
           </tr>
         `;
       });
-
-      tableHtml += `</tbody></table>`;
-      body.innerHTML = tableHtml;
+      html += `</tbody></table>`;
+      bodyEl.innerHTML = html;
 
       const printBtn = document.getElementById('printCalendarSummaryBtn');
-      printBtn.onclick = () => printCourtDayCauseList(dateStr, courtName, matchingCases);
+      printBtn.onclick = () => printCalendarDaySummary(dateStr, dayCases);
 
       document.getElementById('calendarSummaryModal').style.display = 'flex';
     }
@@ -2804,527 +3115,36 @@
       document.getElementById('calendarSummaryModal').style.display = 'none';
     }
 
-    function printCourtDayCauseList(dateStr, courtName, matchingCases) {
-      let printItems = '';
-      matchingCases.forEach((c, idx) => {
-        printItems += `
-          <div class="print-party-item">
-            <span class="cause-tag">Sl #${idx + 1}</span>
-            <div class="party-info">
-              <div class="party-title">${c.parties} (Case No: ${c.caseNo})</div>
-              <small>Client: ${c.clientName || 'N/A'} | Stage: ${c.stage || 'NA'}</small>
-            </div>
-          </div>
-        `;
+    function printCalendarDaySummary(dateStr, dayCases) {
+      let rows = '';
+      dayCases.forEach((c, idx) => {
+        rows += `<tr><td>${idx + 1}</td><td>${c.caseNo}</td><td>${c.parties}</td><td>${c.court}</td><td>${c.clientName || 'N/A'}</td><td>${c.stage || 'N/A'}</td></tr>`;
       });
 
-      const printWindow = window.open('', '_blank');
-      printWindow.document.write(`
+      const win = window.open('', '_blank');
+      win.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
-          <title>Cause List - ${courtName} - ${dateStr}</title>
+          <title>Cause List - ${dateStr}</title>
           <style>
-            @page { size: A4 portrait; margin: 10mm; }
-            body { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: 10px; }
-            .header { border-bottom: 2px solid #1e293b; padding-bottom: 4px; margin-bottom: 10px; }
-            .header h1 { font-size: 14px; margin: 0 0 2px 0; text-transform: uppercase; }
-            .print-court-section { margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 4px; overflow: hidden; }
-            .print-court-title { background: #1e293b; color: #ffffff; font-weight: bold; font-size: 11px; padding: 4px 8px; }
-            .print-parties-list { padding: 4px 8px; }
-            .print-party-item { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; border-bottom: 1px dashed #e2e8f0; }
-            .print-party-item:last-child { border-bottom: none; }
-            .cause-tag { background: #0f766e; color: white; font-weight: bold; padding: 2px 5px; border-radius: 3px; font-size: 9px; min-width: 35px; text-align: center; }
-            .party-info { flex: 1; }
-            .party-title { font-weight: 600; font-size: 10px; }
-            @media print { button { display: none; } }
+            body { font-family: Arial; padding: 20px; font-size: 12px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { border: 1px solid #cbd5e1; padding: 6px; text-align: left; }
+            th { background: #f1f5f9; }
           </style>
         </head>
         <body>
-          <div class="header">
-            <h1>Cause List: ${courtName}</h1>
-            <small>Hearing Date: ${dateStr} | Total Cases: ${matchingCases.length}</small>
-          </div>
-          <div class="print-court-section">
-            <div class="print-court-title">🏛️ ${courtName}</div>
-            <div class="print-parties-list">${printItems}</div>
-          </div>
-        </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.focus();
-      setTimeout(() => { printWindow.print(); }, 250);
-    }
-
-    /* --- REGISTRATION & CASE SUBMISSION --- */
-    function handleCaseSubmit(e) {
-      e.preventDefault();
-      
-      const id = document.getElementById('caseId').value || db.collection('cases').doc().id;
-      const status = document.getElementById('status').value;
-      const caseNo = document.getElementById('caseNo').value.trim();
-      const court = document.getElementById('court').value;
-      const parties = document.getElementById('parties').value.trim();
-      const actSection = document.getElementById('actSection').value.trim();
-      const disputeProperty = document.getElementById('disputeProperty').value.trim();
-      const clientName = document.getElementById('clientName').value.trim();
-      const clientPhone = document.getElementById('clientPhone').value.trim();
-      const nextDate = document.getElementById('nextDate').value;
-      const stage = document.getElementById('stage').value;
-      
-      const fileDataUrl = document.getElementById('fileDataUrl').value;
-      const fileName = document.getElementById('fileName').value;
-
-      const existingRecord = cases.find(c => c.id === id);
-      let history = existingRecord ? (existingRecord.history || []) : [];
-
-      if (!existingRecord && history.length === 0) {
-        history.push({
-          date: new Date().toISOString().split('T')[0],
-          stage: stage,
-          notes: 'Case registered / initiated',
-          assignedNextDate: nextDate,
-          fee: 0,
-          otherFee: 0
-        });
-      }
-
-      const caseObj = {
-        id,
-        status,
-        caseNo,
-        court,
-        parties,
-        actSection,
-        disputeProperty,
-        clientName,
-        clientPhone,
-        nextDate,
-        stage,
-        fileDataUrl,
-        fileName,
-        history
-      };
-
-      const isNew = !existingRecord;
-      saveCaseToCloud(caseObj, isNew).then(() => {
-        resetForm();
-        switchTab('activeCasesTab', document.querySelector('.nav-tab-btn'));
-      });
-    }
-
-    function resetForm() {
-      document.getElementById('caseForm').reset();
-      document.getElementById('caseId').value = '';
-      document.getElementById('formTitle').innerText = 'Register New Case';
-      document.getElementById('saveBtn').innerText = 'Save Case File';
-      setDefaultDate();
-      removeAttachedDocument();
-      renderCourtDropdown();
-      renderStatusDropdown();
-      renderStageDropdown();
-      document.getElementById('partyAlertBox').style.display = 'none';
-    }
-
-    function editCase(id) {
-      const c = cases.find(item => item.id === id);
-      if (!c) return;
-
-      switchTab('registerCaseTab', document.querySelectorAll('.nav-tab-btn')[1]);
-
-      document.getElementById('caseId').value = c.id;
-      renderStatusDropdown(c.status);
-      document.getElementById('caseNo').value = c.caseNo || '';
-      renderCourtDropdown(c.court);
-      document.getElementById('parties').value = c.parties || '';
-      document.getElementById('actSection').value = c.actSection || 'NA';
-      document.getElementById('disputeProperty').value = c.disputeProperty || 'NA';
-      document.getElementById('clientName').value = c.clientName || '';
-      document.getElementById('clientPhone').value = c.clientPhone || '';
-      document.getElementById('nextDate').value = c.nextDate || '';
-      renderStageDropdown(c.stage);
-
-      if (c.fileDataUrl) {
-        document.getElementById('fileDataUrl').value = c.fileDataUrl;
-        document.getElementById('fileName').value = c.fileName || 'document.pdf';
-        document.getElementById('fileDisplayName').innerText = c.fileName || 'document.pdf';
-        document.getElementById('filePreviewContainer').style.display = 'flex';
-      } else {
-        removeAttachedDocument();
-      }
-
-      document.getElementById('formTitle').innerText = 'Edit Case Record';
-      document.getElementById('saveBtn').innerText = 'Update Case Record';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function checkDuplicateParties() {
-      const val = document.getElementById('parties').value.trim().toLowerCase();
-      const alertBox = document.getElementById('partyAlertBox');
-      const currentEditingId = document.getElementById('caseId').value;
-
-      if (!val || val.length < 3) {
-        alertBox.style.display = 'none';
-        return;
-      }
-
-      const matches = cases.filter(c => c.id !== currentEditingId && c.parties && c.parties.toLowerCase().includes(val));
-      if (matches.length > 0) {
-        let matchNames = matches.map(m => `"${m.parties}" (Case No: ${m.caseNo}, Status: ${m.status || 'Ongoing'})`).join(', ');
-        alertBox.innerHTML = `⚠️ <strong>Similar Party Match Found:</strong> Existing cases with matching party name: ${matchNames}. Please verify if this is a related or duplicate filing.`;
-        alertBox.style.display = 'block';
-      } else {
-        alertBox.style.display = 'none';
-      }
-    }
-
-    /* --- ACTIVE CASES TABLE RENDERING WITH COURT ACCORDION --- */
-    function setFilter(status) {
-      currentFilter = status;
-      renderFilterBar();
-      renderCases();
-    }
-
-    function renderCases() {
-      const searchVal = document.getElementById('search').value.toLowerCase();
-      const container = document.getElementById('courtAccordionContainer');
-      container.innerHTML = '';
-
-      let filtered = cases;
-
-      if (currentFilter !== 'All') {
-        filtered = filtered.filter(c => (c.status || 'Ongoing') === currentFilter);
-      }
-
-      if (searchVal) {
-        filtered = filtered.filter(c => 
-          (c.caseNo && c.caseNo.toLowerCase().includes(searchVal)) ||
-          (c.parties && c.parties.toLowerCase().includes(searchVal)) ||
-          (c.clientName && c.clientName.toLowerCase().includes(searchVal)) ||
-          (c.clientPhone && c.clientPhone.toLowerCase().includes(searchVal)) ||
-          (c.court && c.court.toLowerCase().includes(searchVal)) ||
-          (c.actSection && c.actSection.toLowerCase().includes(searchVal)) ||
-          (c.disputeProperty && c.disputeProperty.toLowerCase().includes(searchVal)) ||
-          (c.nextDate && c.nextDate.toLowerCase().includes(searchVal))
-        );
-      }
-
-      // Update badge counts
-      document.getElementById('count-All').innerText = cases.length;
-      statusOptions.forEach(s => {
-        const badgeEl = document.getElementById(`count-${s}`);
-        if (badgeEl) {
-          badgeEl.innerText = cases.filter(c => (c.status || 'Ongoing') === s).length;
-        }
-      });
-
-      if (filtered.length === 0) {
-        container.innerHTML = '<p style="color:#64748b; text-align:center; padding:1.5rem;">No matching case records found.</p>';
-        return;
-      }
-
-      // Group filtered cases by court
-      const groupedByCourt = {};
-      filtered.forEach(c => {
-        const courtName = c.court || 'Uncategorized Court';
-        if (!groupedByCourt[courtName]) groupedByCourt[courtName] = [];
-        groupedByCourt[courtName].push(c);
-      });
-
-      const sortedCourts = Object.keys(groupedByCourt).sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}));
-
-      sortedCourts.forEach(courtName => {
-        const courtCases = groupedByCourt[courtName];
-        courtCases.sort((a, b) => new Date(b.nextDate) - new Date(a.nextDate));
-
-        let tableHtml = `
+          <h2>Daily Cause List — ${dateStr}</h2>
           <table>
-            <thead>
-              <tr>
-                <th>Next Date</th>
-                <th>Status</th>
-                <th>Case No</th>
-                <th>Parties</th>
-                <th>Act & Section</th>
-                <th>Dispute Property</th>
-                <th>Client Details</th>
-                <th>Stage</th>
-                <th>Doc</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-        `;
-
-        courtCases.forEach(c => {
-          const docBtn = c.fileDataUrl ? `
-            <div style="display:flex; gap:0.3rem;">
-              <button class="btn-action btn-print" onclick="viewCaseDocumentById('${c.id}')" title="View File">👁️</button>
-              <button class="btn-action btn-delete" onclick="deleteCaseDocument('${c.id}')" title="Delete File">🗑️</button>
-            </div>
-          ` : '<span style="color:#94a3b8; font-size:0.8rem;">None</span>';
-
-          tableHtml += `
-            <tr>
-              <td>${c.nextDate}</td>
-              <td><span class="status-tag">${c.status || 'Ongoing'}</span></td>
-              <td><span class="case-no-hyperlink" onclick="openAndCopyCaseNo('${c.caseNo}')" title="Click to copy & search">${c.caseNo}</span></td>
-              <td><strong>${c.parties}</strong></td>
-              <td>${c.actSection || 'NA'}</td>
-              <td>${c.disputeProperty || 'NA'}</td>
-              <td>${getClientDisplay(c)}</td>
-              <td>${c.stage || 'NA'}</td>
-              <td>${docBtn}</td>
-              <td>
-                <div class="actions">
-                  <button class="btn-action btn-history" onclick="openHistoryModal('${c.id}')">History</button>
-                  <button class="btn-action btn-edit" onclick="editCase('${c.id}')">Edit</button>
-                  <button class="btn-action btn-delete" onclick="if(confirm('Delete case record?')) deleteCaseFromCloud('${c.id}')">Delete</button>
-                </div>
-              </td>
-            </tr>
-          `;
-        });
-
-        tableHtml += `</tbody></table>`;
-
-        const groupDiv = document.createElement('div');
-        groupDiv.className = 'court-accordion-group expanded';
-        groupDiv.innerHTML = `
-          <div class="court-accordion-header" onclick="toggleAccordion(this)">
-            <div class="court-accordion-header-controls">
-              <span>🏛️ ${courtName} <span class="badge" style="background:#0284c7; color:white;">${courtCases.length}</span></span>
-            </div>
-            <div class="court-accordion-header-controls" onclick="event.stopPropagation()">
-              <button type="button" class="btn-court-print" onclick="printSingleCourtCases('${courtName.replace(/'/g, "\\'")}')">🖨️ Print Court Cause List</button>
-              <span class="accordion-arrow" onclick="toggleAccordion(this.parentElement.parentElement)">▼</span>
-            </div>
-          </div>
-          <div class="court-accordion-content">
-            ${tableHtml}
-          </div>
-        `;
-        container.appendChild(groupDiv);
-      });
-    }
-
-    function toggleAccordion(headerEl) {
-      const group = headerEl.closest('.court-accordion-group');
-      if (group) {
-        group.classList.toggle('expanded');
-      }
-    }
-
-    function expandAllCourts() {
-      document.querySelectorAll('.court-accordion-group').forEach(el => el.classList.add('expanded'));
-    }
-
-    function collapseAllCourts() {
-      document.querySelectorAll('.court-accordion-group').forEach(el => el.classList.remove('expanded'));
-    }
-
-    function printSingleCourtCases(courtName) {
-      const courtCases = cases.filter(c => c.court === courtName);
-      if (courtCases.length === 0) {
-        alert("No cases found for this court.");
-        return;
-      }
-
-      let printItems = '';
-      courtCases.forEach((c, idx) => {
-        printItems += `
-          <div class="print-party-item">
-            <span class="cause-tag">Sl #${idx + 1}</span>
-            <div class="party-info">
-              <div class="party-title">${c.parties} (Case No: ${c.caseNo})</div>
-              <small>Next Date: ${c.nextDate} | Client: ${c.clientName || 'N/A'} | Stage: ${c.stage || 'NA'}</small>
-            </div>
-          </div>
-        `;
-      });
-
-      const printWindow = window.open('', '_blank');
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Cause List - ${courtName}</title>
-          <style>
-            @page { size: A4 portrait; margin: 10mm; }
-            body { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: 10px; }
-            .header { border-bottom: 2px solid #1e293b; padding-bottom: 4px; margin-bottom: 10px; }
-            .header h1 { font-size: 14px; margin: 0 0 2px 0; text-transform: uppercase; }
-            .print-court-section { margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 4px; overflow: hidden; }
-            .print-court-title { background: #1e293b; color: #ffffff; font-weight: bold; font-size: 11px; padding: 4px 8px; }
-            .print-parties-list { padding: 4px 8px; }
-            .print-party-item { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; border-bottom: 1px dashed #e2e8f0; }
-            .print-party-item:last-child { border-bottom: none; }
-            .cause-tag { background: #0f766e; color: white; font-weight: bold; padding: 2px 5px; border-radius: 3px; font-size: 9px; min-width: 35px; text-align: center; }
-            .party-info { flex: 1; }
-            .party-title { font-weight: 600; font-size: 10px; }
-            @media print { button { display: none; } }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>Cause List: ${courtName}</h1>
-            <small>Total Cases: ${courtCases.length}</small>
-          </div>
-          <div class="print-court-section">
-            <div class="print-court-title">🏛️ ${courtName}</div>
-            <div class="print-parties-list">${printItems}</div>
-          </div>
+            <thead><tr><th>#</th><th>Case No</th><th>Parties</th><th>Court</th><th>Client</th><th>Stage</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <script>window.onload = function() { window.print(); }<\/script>
         </body>
         </html>
       `);
-      printWindow.document.close();
-      printWindow.focus();
-      setTimeout(() => { printWindow.print(); }, 250);
-    }
-
-    /* --- HISTORY & HEARING LOGGING MODAL --- */
-    function openHistoryModal(id) {
-      const c = cases.find(item => item.id === id);
-      if (!c) return;
-
-      document.getElementById('modalCaseId').value = c.id;
-      document.getElementById('modalCaseTitle.innerText') || (document.getElementById('modalCaseTitle').innerText = `Hearing History: ${c.parties} (${c.caseNo})`);
-
-      const todayStr = new Date().toISOString().split('T')[0];
-      document.getElementById('hearingDate').value = todayStr;
-      document.getElementById('newNextDate').value = c.nextDate || todayStr;
-      document.getElementById('hearingFee').value = '';
-      document.getElementById('otherCourtFee').value = '';
-      document.getElementById('hearingStage').value = c.stage || '';
-      document.getElementById('hearingNotes').value = '';
-      resetHearingForm();
-
-      renderHistoryTimeline(c);
-      document.getElementById('historyModal').style.display = 'flex';
-    }
-
-    function closeModal() {
-      document.getElementById('historyModal').style.display = 'none';
-    }
-
-    function resetHearingForm() {
-      document.getElementById('editingHearingIndex').value = '-1';
-      document.getElementById('hearingFormHeading').innerText = '+ Record Hearing Outcome & Set Next Date';
-      document.getElementById('hearingSubmitBtn').innerText = 'Log Hearing & Update Case';
-      document.getElementById('cancelHearingEditBtn').style.display = 'none';
-      const todayStr = new Date().toISOString().split('T')[0];
-      document.getElementById('hearingDate').value = todayStr;
-      document.getElementById('hearingFee').value = '';
-      document.getElementById('otherCourtFee').value = '';
-      document.getElementById('hearingStage').value = '';
-      document.getElementById('hearingNotes').value = '';
-    }
-
-    function renderHistoryTimeline(c) {
-      const timeline = document.getElementById('historyTimeline');
-      timeline.innerHTML = '';
-
-      const history = c.history || [];
-      if (history.length === 0) {
-        timeline.innerHTML = '<p style="color:#64748b; font-size:0.9rem;">No past hearing records logged yet.</p>';
-        return;
-      }
-
-      history.forEach((h, idx) => {
-        const item = document.createElement('div');
-        item.className = 'history-item';
-        const feeStr = (h.fee || h.fee === 0) ? `Hearing Fee: ₹${h.fee}` : '';
-        const otherFeeStr = (h.otherFee || h.otherFee === 0) ? `Stationary & Others Chrg.: ₹${h.otherFee}` : '';
-        const feesCombined = [feeStr, otherFeeStr].filter(Boolean).join(' | ');
-
-        item.innerHTML = `
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
-            <strong style="color:var(--primary);">Date: ${h.date}</strong>
-            <small style="color:var(--accent); font-weight:bold;">Next Hearing Assigned: ${h.assignedNextDate || 'N/A'}</small>
-          </div>
-          <div style="margin-top:0.3rem; font-size:0.85rem; color:#475569;">Stage: <strong>${h.stage || 'N/A'}</strong></div>
-          <p style="margin: 0.3rem 0; font-size:0.9rem; color:#334155;">${h.notes}</p>
-          ${feesCombined ? `<div style="font-size:0.82rem; color:#0369a1; margin-top:0.2rem;">💰 ${feesCombined}</div>` : ''}
-          <div class="hearing-actions">
-            <button class="btn-action btn-edit btn-sm" onclick="editHearingEntry('${c.id}', ${idx})">Edit Entry</button>
-            <button class="btn-action btn-delete btn-sm" onclick="deleteHearingEntry('${c.id}', ${idx})">Delete</button>
-          </div>
-        `;
-        timeline.appendChild(item);
-      });
-    }
-
-    function editHearingEntry(caseId, index) {
-      const c = cases.find(item => item.id === caseId);
-      if (!c || !c.history || !c.history[index]) return;
-
-      const h = c.history[index];
-      document.getElementById('editingHearingIndex').value = index;
-      document.getElementById('hearingDate').value = h.date || '';
-      document.getElementById('newNextDate').value = h.assignedNextDate || '';
-      document.getElementById('hearingFee').value = h.fee !== undefined ? h.fee : '';
-      document.getElementById('otherCourtFee').value = h.otherFee !== undefined ? h.otherFee : '';
-      document.getElementById('hearingStage').value = h.stage || '';
-      document.getElementById('hearingNotes').value = h.notes || '';
-
-      document.getElementById('hearingFormHeading').innerText = `✏️ Editing Hearing Record #${index + 1}`;
-      document.getElementById('hearingSubmitBtn').innerText = 'Update Hearing Record';
-      document.getElementById('cancelHearingEditBtn').style.display = 'inline-block';
-    }
-
-    async function deleteHearingEntry(caseId, index) {
-      if (!confirm("Are you sure you want to delete this hearing record?")) return;
-
-      const c = cases.find(item => item.id === caseId);
-      if (!c || !c.history) return;
-
-      c.history.splice(index, 1);
-      await saveCaseToCloud(c, false, true);
-      renderHistoryTimeline(c);
-      renderCases();
-    }
-
-    async function handleHearingSubmit(e) {
-      e.preventDefault();
-      
-      const caseId = document.getElementById('modalCaseId').value;
-      const editingIndex = parseInt(document.getElementById('editingHearingIndex').value);
-      const hearingDate = document.getElementById('hearingDate').value;
-      const newNextDate = document.getElementById('newNextDate').value;
-      const hearingFee = parseFloat(document.getElementById('hearingFee').value) || 0;
-      const otherCourtFee = parseFloat(document.getElementById('otherCourtFee').value) || 0;
-      const hearingStage = document.getElementById('hearingStage').value.trim();
-      const hearingNotes = document.getElementById('hearingNotes').value.trim();
-
-      const c = cases.find(item => item.id === caseId);
-      if (!c) return;
-
-      if (!c.history) c.history = [];
-
-      const newEntry = {
-        date: hearingDate,
-        stage: hearingStage,
-        notes: hearingNotes,
-        assignedNextDate: newNextDate,
-        fee: hearingFee,
-        otherFee: otherCourtFee
-      };
-
-      if (editingIndex >= 0 && editingIndex < c.history.length) {
-        c.history[editingIndex] = newEntry;
-      } else {
-        c.history.push(newEntry);
-      }
-
-      c.nextDate = newNextDate;
-      c.stage = hearingStage || c.stage;
-
-      await saveCaseToCloud(c, false, true);
-      resetHearingForm();
-      renderHistoryTimeline(c);
-      renderCases();
-      alert("✅ Hearing outcome logged and case record updated successfully!");
+      win.document.close();
     }
 
     /* --- SEARCH FEES BETWEEN DATES --- */
@@ -3339,54 +3159,38 @@
 
       let totalFee = 0;
       let totalOtherFee = 0;
-      const feeLogs = [];
+      let matchedRows = '';
 
       cases.forEach(c => {
-        if (Array.isArray(c.history)) {
+        if (c.history && Array.isArray(c.history)) {
           c.history.forEach(h => {
             if (h.date && h.date >= fromDate && h.date <= toDate) {
-              const fee = parseFloat(h.fee) || 0;
-              const otherFee = parseFloat(h.otherFee) || 0;
-              totalFee += fee;
-              totalOtherFee += otherFee;
+              const f = parseFloat(h.fee) || 0;
+              const o = parseFloat(h.otherFee) || 0;
+              totalFee += f;
+              totalOtherFee += o;
 
-              feeLogs.push({
-                date: h.date,
-                caseNo: c.caseNo,
-                clientDetails: getClientDisplay(c),
-                stage: h.stage || c.stage || 'Hearing',
-                fee: fee,
-                otherFee: otherFee
-              });
+              matchedRows += `
+                <tr>
+                  <td>${h.date}</td>
+                  <td><span class="case-no-hyperlink" onclick="openAndCopyCaseNo('${c.caseNo}')">${c.caseNo}</span></td>
+                  <td>${getClientDisplay(c)}</td>
+                  <td>${h.stage || 'N/A'}</td>
+                  <td>₹${f.toFixed(2)}</td>
+                  <td>₹${o.toFixed(2)}</td>
+                </tr>
+              `;
             }
           });
         }
       });
 
-      document.getElementById('totalFeeAmount').innerText = `₹${totalFee.toLocaleString()}`;
-      document.getElementById('totalOtherFeeAmount').innerText = `₹${totalOtherFee.toLocaleString()}`;
+      document.getElementById('totalFeeAmount').innerText = `₹${totalFee.toFixed(2)}`;
+      document.getElementById('totalOtherFeeAmount').innerText = `₹${totalOtherFee.toFixed(2)}`;
       document.getElementById('feeSummaryBox').style.display = 'block';
 
       const tbody = document.getElementById('feeTableBody');
-      tbody.innerHTML = '';
-
-      if (feeLogs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#64748b;">No hearing fee logs found between selected dates.</td></tr>';
-      } else {
-        feeLogs.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(log => {
-          tbody.innerHTML += `
-            <tr>
-              <td>${log.date}</td>
-              <td><span class="case-no-hyperlink" onclick="openAndCopyCaseNo('${log.caseNo}')">${log.caseNo}</span></td>
-              <td>${log.clientDetails}</td>
-              <td>${log.stage}</td>
-              <td><strong>₹${log.fee.toLocaleString()}</strong></td>
-              <td><strong>₹${log.otherFee.toLocaleString()}</strong></td>
-            </tr>
-          `;
-        });
-      }
-
+      tbody.innerHTML = matchedRows || `<tr><td colspan="6" style="text-align:center; color:#64748b;">No fee records found in selected date range.</td></tr>`;
       document.getElementById('feeResultsCard').style.display = 'block';
     }
 
@@ -3397,17 +3201,17 @@
       document.getElementById('feeResultsCard').style.display = 'none';
     }
 
-    /* --- FORWARD CASES MODAL --- */
+    /* --- FORWARD CASE MODAL --- */
     function openForwardCaseModal() {
       const todayStr = new Date().toISOString().split('T')[0];
       document.getElementById('forwardSourceDate').value = todayStr;
       document.getElementById('forwardTargetDate').value = '';
       document.getElementById('forwardReason').value = '';
 
-      const courtFilter = document.getElementById('forwardCourtFilter');
-      courtFilter.innerHTML = '<option value="ALL">-- All Courts / Forums --</option>';
+      const courtSelect = document.getElementById('forwardCourtFilter');
+      courtSelect.innerHTML = '<option value="ALL">-- All Courts / Forums --</option>';
       courtOptions.forEach(c => {
-        courtFilter.innerHTML += `<option value="${c}">${c}</option>`;
+        courtSelect.innerHTML += `<option value="${c}">${c}</option>`;
       });
 
       loadForwardCases();
@@ -3426,27 +3230,24 @@
       container.innerHTML = '';
 
       if (!sourceDate) {
-        container.innerHTML = '<p style="color:#64748b;">Please select a valid source date.</p>';
+        container.innerHTML = '<p style="color:#64748b;">Please select a source date.</p>';
         return;
       }
 
       let activeCases = cases.filter(c => c.nextDate === sourceDate);
-
       if (courtFilter !== 'ALL') {
         activeCases = activeCases.filter(c => c.court === courtFilter);
       }
-
       if (searchVal) {
         activeCases = activeCases.filter(c => 
           (c.caseNo && c.caseNo.toLowerCase().includes(searchVal)) ||
           (c.parties && c.parties.toLowerCase().includes(searchVal)) ||
-          (c.clientName && c.clientName.toLowerCase().includes(searchVal)) ||
-          (c.court && c.court.toLowerCase().includes(searchVal))
+          (c.clientName && c.clientName.toLowerCase().includes(searchVal))
         );
       }
 
       if (activeCases.length === 0) {
-        container.innerHTML = `<p style="color:#64748b; font-size:0.9rem; text-align:center; padding: 1rem;">No cases scheduled for ${sourceDate} matching filter.</p>`;
+        container.innerHTML = `<p style="color:#64748b; text-align:center; padding:1rem;">No cases found on ${sourceDate}.</p>`;
         return;
       }
 
@@ -3454,10 +3255,10 @@
         const item = document.createElement('div');
         item.className = 'forward-list-item';
         item.innerHTML = `
-          <input type="checkbox" class="forward-checkbox" value="${c.id}" checked>
+          <input type="checkbox" class="forward-case-checkbox" value="${c.id}" checked>
           <div class="forward-item-details">
-            <div><strong>Case No: <span class="case-no-hyperlink" onclick="openAndCopyCaseNo('${c.caseNo}')">${c.caseNo}</span></strong> | Parties: ${c.parties}</div>
-            <div style="font-size:0.8rem; color:#475569; margin-top:2px;">Court: <strong>${c.court}</strong> | Client: <strong>${c.clientName || 'N/A'}</strong> | Stage: ${c.stage || 'NA'}</div>
+            <strong>${c.caseNo}</strong> — ${c.parties} <br>
+            <small style="color:#475569;">Court: ${c.court} | Client: ${c.clientName || 'N/A'}</small>
           </div>
         `;
         container.appendChild(item);
@@ -3465,31 +3266,31 @@
     }
 
     function toggleSelectAllForward(masterCheckbox) {
-      document.querySelectorAll('.forward-checkbox').forEach(cb => cb.checked = masterCheckbox.checked);
+      document.querySelectorAll('.forward-case-checkbox').forEach(cb => cb.checked = masterCheckbox.checked);
     }
 
     async function submitForwardCases(e) {
       e.preventDefault();
-      const sourceDate = document.getElementById('forwardSourceDate').value;
       const targetDate = document.getElementById('forwardTargetDate').value;
-      const reason = document.getElementById('forwardReason').value.trim() || 'Adjourned / Forwarded to next date';
+      const sourceDate = document.getElementById('forwardSourceDate').value;
+      const reason = document.getElementById('forwardReason').value.trim() || 'Adjourned / Forwarded';
 
       if (!targetDate) {
         alert("Please select a target new hearing date.");
         return;
       }
 
-      const checkedBoxes = document.querySelectorAll('.forward-checkbox:checked');
-      if (checkedBoxes.length === 0) {
+      const checkboxes = document.querySelectorAll('.forward-case-checkbox:checked');
+      if (checkboxes.length === 0) {
         alert("Please select at least one case to forward.");
         return;
       }
 
-      if (!confirm(`Are you sure you want to forward ${checkedBoxes.length} case(s) from ${sourceDate} to ${targetDate}?`)) return;
+      if (!confirm(`Are you sure you want to forward ${checkboxes.length} case(s) to ${targetDate}?`)) return;
 
       showLoader("Forwarding Cases...");
       try {
-        for (const cb of checkedBoxes) {
+        for (const cb of checkboxes) {
           const caseId = cb.value;
           const targetCase = cases.find(c => c.id === caseId);
           if (targetCase) {
@@ -3510,14 +3311,14 @@
         await loadDataFromCloud(true);
         closeForwardCaseModal();
         hideLoader();
-        alert("✅ Selected cases forwarded successfully!");
+        alert("✅ Cases forwarded successfully!");
       } catch (err) {
         hideLoader();
         alert("Error forwarding cases: " + err.message);
       }
     }
 
-    /* --- ADD/EDIT COURT & STATUS WINDOW CONTROLS --- */
+    /* --- SETTINGS / COURT / STATUS / STAGE MANAGEMENT MODALS --- */
     function openAddCourtModal() {
       document.getElementById('courtModalTitle').innerText = 'Add New Court / Forum & Judge';
       document.getElementById('newCourtInput').value = '';
@@ -3527,16 +3328,14 @@
     }
 
     function openEditCourtModal() {
-      const courtSelect = document.getElementById('court');
-      const val = courtSelect.value;
-      if (!val) {
-        alert("Please select a court option to edit.");
+      const currentCourt = document.getElementById('court').value;
+      if (!currentCourt) {
+        alert("No court selected to edit.");
         return;
       }
-
-      document.getElementById('courtModalTitle').innerText = 'Edit Court / Forum & Judge';
-      document.getElementById('newCourtInput').value = val;
-      document.getElementById('oldCourtVal').value = val;
+      document.getElementById('courtModalTitle').innerText = 'Edit Selected Court / Forum';
+      document.getElementById('newCourtInput').value = currentCourt;
+      document.getElementById('oldCourtVal').value = currentCourt;
       document.getElementById('saveCourtBtn').innerText = 'Update Court Option';
       document.getElementById('addCourtModal').style.display = 'flex';
     }
@@ -3554,64 +3353,37 @@
         return;
       }
 
-      showLoader("Saving Court Option...");
       if (oldVal) {
         const index = courtOptions.indexOf(oldVal);
-        if (index !== -1) {
-          courtOptions[index] = val;
-        }
-        // Update all cases using this court
-        cases.forEach(c => {
-          if (c.court === oldVal) c.court = val;
-        });
+        if (index >= 0) courtOptions[index] = val;
       } else {
         if (courtOptions.includes(val)) {
-          hideLoader();
-          alert("This court option already exists.");
+          alert("Court option already exists.");
           return;
         }
         courtOptions.push(val);
       }
 
+      showLoader("Saving Court Option...");
       await saveCourtOptionsToCloud();
-      for (const c of cases) {
-        await saveCaseToCloud(c, false, true, true);
-      }
-
-      await loadDataFromCloud(true);
-      closeAddCourtModal();
+      saveAndRefresh();
       renderCourtDropdown(val);
+      closeAddCourtModal();
       hideLoader();
-      alert("✅ Court option saved successfully!");
     }
 
     async function deleteSelectedCourt() {
-      const courtSelect = document.getElementById('court');
-      const val = courtSelect.value;
-      if (!val) {
-        alert("Please select a court option to delete.");
-        return;
+      const currentCourt = document.getElementById('court').value;
+      if (!currentCourt) return;
+
+      if (confirm(`Are you sure you want to delete court option "${currentCourt}"?`)) {
+        courtOptions = courtOptions.filter(c => c !== currentCourt);
+        showLoader("Deleting Court Option...");
+        await saveCourtOptionsToCloud();
+        saveAndRefresh();
+        renderCourtDropdown();
+        hideLoader();
       }
-
-      if (courtOptions.length <= 1) {
-        alert("You must keep at least one court option.");
-        return;
-      }
-
-      const matchingCount = cases.filter(c => c.court === val).length;
-      if (matchingCount > 0) {
-        alert(`Cannot delete "${val}" because ${matchingCount} case(s) are currently assigned to it. Please reassign those cases first.`);
-        return;
-      }
-
-      if (!confirm(`Are you sure you want to delete court option "${val}"?`)) return;
-
-      showLoader("Deleting Court Option...");
-      courtOptions = courtOptions.filter(c => c !== val);
-      await saveCourtOptionsToCloud();
-      renderCourtDropdown();
-      hideLoader();
-      alert("🗑️ Court option deleted successfully!");
     }
 
     function openAddStatusModal() {
@@ -3623,16 +3395,11 @@
     }
 
     function openEditStatusModal() {
-      const statusSelect = document.getElementById('status');
-      const val = statusSelect.value;
-      if (!val) {
-        alert("Please select a status option to edit.");
-        return;
-      }
-
-      document.getElementById('statusModalTitle').innerText = 'Edit Case Status';
-      document.getElementById('newStatusInput').value = val;
-      document.getElementById('oldStatusVal').value = val;
+      const currentStatus = document.getElementById('status').value;
+      if (!currentStatus) return;
+      document.getElementById('statusModalTitle').innerText = 'Edit Selected Case Status';
+      document.getElementById('newStatusInput').value = currentStatus;
+      document.getElementById('oldStatusVal').value = currentStatus;
       document.getElementById('saveStatusBtn').innerText = 'Update Status Option';
       document.getElementById('addStatusModal').style.display = 'flex';
     }
@@ -3645,70 +3412,36 @@
       const val = document.getElementById('newStatusInput').value.trim();
       const oldVal = document.getElementById('oldStatusVal').value;
 
-      if (!val) {
-        alert("Please enter a valid status name.");
-        return;
-      }
+      if (!val) return;
 
-      showLoader("Saving Status Option...");
       if (oldVal) {
         const index = statusOptions.indexOf(oldVal);
-        if (index !== -1) {
-          statusOptions[index] = val;
-        }
-        cases.forEach(c => {
-          if (c.status === oldVal) c.status = val;
-        });
+        if (index >= 0) statusOptions[index] = val;
       } else {
-        if (statusOptions.includes(val)) {
-          hideLoader();
-          alert("This status option already exists.");
-          return;
-        }
+        if (statusOptions.includes(val)) return;
         statusOptions.push(val);
       }
 
-      await saveStatusOptionsToCloud();
-      for (const c of cases) {
-        await saveCaseToCloud(c, false, true, true);
-      }
-
-      await loadDataFromCloud(true);
-      closeAddStatusModal();
+      showLoader("Saving Status...");
+      await db.collection('settings').doc('statuses').set({ options: statusOptions });
+      saveAndRefresh();
       renderStatusDropdown(val);
-      renderFilterBar();
+      closeAddStatusModal();
       hideLoader();
-      alert("✅ Status option saved successfully!");
     }
 
     async function deleteSelectedStatus() {
-      const statusSelect = document.getElementById('status');
-      const val = statusSelect.value;
-      if (!val) {
-        alert("Please select a status option to delete.");
-        return;
+      const currentStatus = document.getElementById('status').value;
+      if (!currentStatus) return;
+
+      if (confirm(`Delete status "${currentStatus}"?`)) {
+        statusOptions = statusOptions.filter(s => s !== currentStatus);
+        showLoader("Deleting Status...");
+        await db.collection('settings').doc('statuses').set({ options: statusOptions });
+        saveAndRefresh();
+        renderStatusDropdown();
+        hideLoader();
       }
-
-      if (statusOptions.length <= 1) {
-        alert("You must keep at least one status option.");
-        return;
-      }
-
-      const matchingCount = cases.filter(c => c.status === val).length;
-      if (matchingCount > 0) {
-        alert(`Cannot delete "${val}" because ${matchingCount} case(s) are currently assigned to it.`);
-        return;
-      }
-
-      if (!confirm(`Are you sure you want to delete status option "${val}"?`)) return;
-
-      showLoader("Deleting Status Option...");
-      statusOptions = statusOptions.filter(s => s !== val);
-      await saveStatusOptionsToCloud();
-      renderStatusDropdown();
-      renderFilterBar();
-      hideLoader();
-      alert("🗑️ Status option deleted successfully!");
     }
 
     function openAddStageModal() {
@@ -3722,53 +3455,50 @@
 
     async function saveNewStage() {
       const val = document.getElementById('newStageInput').value.trim();
-      if (!val) {
-        alert("Please enter a proceedings stage name.");
-        return;
-      }
+      if (!val) return;
 
-      if (stageOptions.includes(val)) {
-        alert("This proceedings option already exists.");
-        return;
-      }
-
-      showLoader("Saving Proceedings Option...");
-      stageOptions.push(val);
+      if (!stageOptions.includes(val)) stageOptions.push(val);
+      showLoader("Saving Stage...");
       await saveStageOptionsToCloud();
       renderStageDropdown(val);
       closeAddStageModal();
       hideLoader();
-      alert("✅ Proceedings option added successfully!");
     }
 
     async function deleteSelectedStage() {
-      const stageSelect = document.getElementById('stage');
-      const val = stageSelect.value;
-      if (!val || val === "NA") {
-        alert("Please select a valid proceedings option to delete.");
+      const currentStage = document.getElementById('stage').value;
+      if (!currentStage || currentStage === 'NA') return;
+
+      if (confirm(`Delete proceedings option "${currentStage}"?`)) {
+        stageOptions = stageOptions.filter(st => st !== currentStage);
+        showLoader("Deleting Proceedings Option...");
+        await saveStageOptionsToCloud();
+        renderStageDropdown();
+        hideLoader();
+      }
+    }
+
+    function checkDuplicateParties() {
+      const val = document.getElementById('parties').value.trim().toLowerCase();
+      const alertBox = document.getElementById('partyAlertBox');
+      if (!val || val.length < 3) {
+        alertBox.style.display = 'none';
         return;
       }
 
-      if (!confirm(`Are you sure you want to delete proceedings option "${val}"?`)) return;
-
-      showLoader("Deleting Proceedings Option...");
-      stageOptions = stageOptions.filter(st => st !== val);
-      await saveStageOptionsToCloud();
-      renderStageDropdown();
-      hideLoader();
-      alert("🗑️ Proceedings option deleted successfully!");
+      const existing = cases.filter(c => c.parties && c.parties.toLowerCase().includes(val));
+      if (existing.length > 0) {
+        alertBox.innerHTML = `⚠️ Note: ${existing.length} similar case(s) found with parties matching "${document.getElementById('parties').value}". Check if client already exists.`;
+        alertBox.style.display = 'block';
+      } else {
+        alertBox.style.display = 'none';
+      }
     }
 
-    function saveAndRefresh() {
-      renderCourtDropdown();
-      renderStatusDropdown();
-      renderStageDropdown();
-      renderFilterBar();
-      renderCourtSummaryBar();
-      renderCases();
-      renderCalendar();
+    window.onload = function() {
       setDefaultDate();
-    }
+      renderCalendar();
+    };
   </script>
 </body>
 </html>
