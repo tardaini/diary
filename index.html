@@ -797,6 +797,20 @@
       border: 1px solid #0f766e !important;
       border-radius: 4px;
     }
+    .forward-list-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.5rem;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      margin-bottom: 0.4rem;
+    }
+    .forward-list-item input[type="checkbox"] {
+      width: auto;
+      margin: 0;
+    }
   </style>
 </head>
 <body>
@@ -1383,6 +1397,27 @@
         <div id="historyTimeline" class="history-timeline"></div>
 
         <button class="btn-secondary" style="margin-top:1rem; width:100%;" onclick="closeModal()">Close History Window</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Calendar Summary Modal -->
+  <div id="calendarSummaryModal" class="modal">
+    <div class="modal-content window-modal-content" id="calendarSummaryWindowContent" style="max-width: 850px;">
+      <div class="window-titlebar" onmousedown="startDrag(event, 'calendarSummaryWindowContent')">
+        <div class="window-title" id="calendarModalTitle">Cause List Summary</div>
+        <div class="window-controls">
+          <button type="button" class="window-btn" onclick="toggleWindowMinimize('calendarSummaryWindowContent')" title="Minimize">_</button>
+          <button type="button" class="window-btn" onclick="toggleWindowMaximize('calendarSummaryWindowContent')" title="Maximize / Restore">□</button>
+          <button type="button" class="window-btn btn-close-win" onclick="closeCalendarSummaryModal()" title="Close Window">✕</button>
+        </div>
+      </div>
+      <div class="window-body">
+        <div id="calendarModalBody"></div>
+        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+          <button type="button" id="printCalendarSummaryBtn" class="btn-print" style="margin-top:0; width:50%;">🖨️ Print Cause List</button>
+          <button type="button" class="btn-secondary" style="margin-top: 0; width: 50%;" onclick="closeCalendarSummaryModal()">Close</button>
+        </div>
       </div>
     </div>
   </div>
@@ -2118,6 +2153,7 @@
       }, 400);
     }
 
+    /* --- FAST BATCH RESTORATION --- */
     async function importDatabaseBackup() {
       const fileInput = document.getElementById('restoreFile');
       if (!fileInput.files || fileInput.files.length === 0) {
@@ -2136,8 +2172,8 @@
             return;
           }
 
-          if (confirm(`Restore backup and sync ${parsed.cases.length} case records?`)) {
-            showLoader("Restoring Database Backup...");
+          if (confirm(`Restore backup and sync ${parsed.cases.length} case records using high-speed batch processing?`)) {
+            showLoader("Restoring Database Backup (Fast Batch Mode)...");
 
             if (parsed.courtOptions) courtOptions = parsed.courtOptions;
             if (parsed.statusOptions) statusOptions = parsed.statusOptions;
@@ -2147,13 +2183,21 @@
             await saveStatusOptionsToCloud();
             await saveStageOptionsToCloud();
 
-            for (const c of parsed.cases) {
-              await db.collection('cases').doc(c.id || db.collection('cases').doc().id).set(c);
+            // Firestore batch write limit is 500 writes per batch commit
+            const batchSize = 500;
+            for (let i = 0; i < parsed.cases.length; i += batchSize) {
+              const batch = db.batch();
+              const chunk = parsed.cases.slice(i, i + batchSize);
+              chunk.forEach(c => {
+                const docRef = db.collection('cases').doc(c.id || db.collection('cases').doc().id);
+                batch.set(docRef, c);
+              });
+              await batch.commit();
             }
 
             await loadDataFromCloud(true);
             closeBackupModal();
-            alert("Backup successfully restored and synced!");
+            alert("✅ Backup successfully restored and synced at maximum speed!");
           }
         } catch (err) {
           alert("Error parsing backup file: " + err.message);
@@ -2165,7 +2209,7 @@
       reader.readAsText(file);
     }
 
-    /* --- BULK & SINGLE UPDATE LOG BOOK HANDLERS --- */
+    /* --- BULK & SINGLE UPDATE LOG BOOK HANDLERS (FAST BATCHED) --- */
     function openBulkLogModal() {
       const todayStr = new Date().toISOString().split('T')[0];
       document.getElementById('bulkLogDate').value = todayStr;
@@ -2351,7 +2395,7 @@
 
       if (!confirm(`Forward case No "${targetCase.caseNo}" to ${nextDateVal}?`)) return;
 
-      showLoader("Updating & Forwarding Case...");
+      showLoader("Updating & Forwarding Case (Fast Mode)...");
       try {
         if (!targetCase.history) targetCase.history = [];
         targetCase.history.push({
@@ -2378,6 +2422,7 @@
       }
     }
 
+    /* --- HIGHEST SPEED BULK SUBMISSION USING FIRESTORE BATCH --- */
     async function submitForwardAllLogbook() {
       const container = document.getElementById('bulkLogCasesContainer');
       const cards = container.querySelectorAll('.logbook-case-card');
@@ -2388,9 +2433,9 @@
         return;
       }
 
-      if (!confirm(`Update and forward ${checkedCards.length} selected case(s)?`)) return;
+      if (!confirm(`Update and forward ${checkedCards.length} selected case(s) with lightning-fast batch submission?`)) return;
 
-      showLoader("Updating & Forwarding Cases...");
+      showLoader("Submitting All Cases via Fast Batch Write...");
       try {
         const masterStatus = document.getElementById('masterStatusSelect').value;
         const masterNextDate = document.getElementById('masterNextDate').value;
@@ -2399,6 +2444,8 @@
 
         let masterProceedings = masterNotesSelect === 'CUSTOM' ? masterNotesText : masterNotesSelect;
         const currentDate = document.getElementById('bulkLogDate').value;
+
+        const batch = db.batch();
 
         for (const card of checkedCards) {
           const caseId = card.dataset.caseId;
@@ -2436,23 +2483,38 @@
           targetCase.status = statusVal || masterStatus || targetCase.status;
           targetCase.stage = stageVal || targetCase.stage;
           targetCase.nextDate = nextDateVal;
+
+          const cleanData = {
+            id: targetCase.id,
+            status: targetCase.status || "",
+            caseNo: targetCase.caseNo || "",
+            court: targetCase.court || "",
+            parties: targetCase.parties || "",
+            actSection: targetCase.actSection || "NA",
+            disputeProperty: targetCase.disputeProperty || "NA",
+            clientName: targetCase.clientName || "",
+            clientPhone: targetCase.clientPhone || "",
+            client: targetCase.client || "",
+            nextDate: targetCase.nextDate || "",
+            stage: targetCase.stage || "",
+            causeNo: targetCase.causeNo !== undefined && targetCase.causeNo !== null ? String(targetCase.causeNo) : "",
+            documents: Array.isArray(targetCase.documents) ? targetCase.documents : [],
+            history: targetCase.history
+          };
+
+          const docRef = db.collection('cases').doc(cleanData.id);
+          batch.set(docRef, cleanData);
         }
 
-        for (const card of checkedCards) {
-          const caseId = card.dataset.caseId;
-          const targetCase = cases.find(c => c.id === caseId);
-          if (targetCase) {
-            await saveCaseToCloud(targetCase, false, true, true);
-          }
-        }
-
+        // Commit all changes in a single lightning-fast atomic round trip
+        await batch.commit();
         await loadDataFromCloud(true);
         closeBulkLogModal();
         hideLoader();
-        alert("✅ Selected cases updated and forwarded successfully!");
+        alert("✅ All selected cases updated and submitted to Firebase instantaneously!");
       } catch (err) {
         hideLoader();
-        alert("Error forwarding cases: " + err.message);
+        alert("Error in batch submission: " + err.message);
       }
     }
 
@@ -3201,7 +3263,7 @@
       document.getElementById('feeResultsCard').style.display = 'none';
     }
 
-    /* --- FORWARD CASE MODAL --- */
+    /* --- FORWARD CASE MODAL (FAST BATCH MODE) --- */
     function openForwardCaseModal() {
       const todayStr = new Date().toISOString().split('T')[0];
       document.getElementById('forwardSourceDate').value = todayStr;
@@ -3286,10 +3348,11 @@
         return;
       }
 
-      if (!confirm(`Are you sure you want to forward ${checkboxes.length} case(s) to ${targetDate}?`)) return;
+      if (!confirm(`Are you sure you want to forward ${checkboxes.length} case(s) to ${targetDate} using fast batch commit?`)) return;
 
-      showLoader("Forwarding Cases...");
+      showLoader("Forwarding Cases (Fast Batch Mode)...");
       try {
+        const batch = db.batch();
         for (const cb of checkboxes) {
           const caseId = cb.value;
           const targetCase = cases.find(c => c.id === caseId);
@@ -3304,14 +3367,35 @@
               otherFee: 0
             });
             targetCase.nextDate = targetDate;
-            await saveCaseToCloud(targetCase, false, true, true);
+
+            const cleanData = {
+              id: targetCase.id,
+              status: targetCase.status || "",
+              caseNo: targetCase.caseNo || "",
+              court: targetCase.court || "",
+              parties: targetCase.parties || "",
+              actSection: targetCase.actSection || "NA",
+              disputeProperty: targetCase.disputeProperty || "NA",
+              clientName: targetCase.clientName || "",
+              clientPhone: targetCase.clientPhone || "",
+              client: targetCase.client || "",
+              nextDate: targetCase.nextDate || "",
+              stage: targetCase.stage || "",
+              causeNo: targetCase.causeNo !== undefined && targetCase.causeNo !== null ? String(targetCase.causeNo) : "",
+              documents: Array.isArray(targetCase.documents) ? targetCase.documents : [],
+              history: targetCase.history
+            };
+
+            const docRef = db.collection('cases').doc(cleanData.id);
+            batch.set(docRef, cleanData);
           }
         }
 
+        await batch.commit();
         await loadDataFromCloud(true);
         closeForwardCaseModal();
         hideLoader();
-        alert("✅ Cases forwarded successfully!");
+        alert("✅ Cases forwarded successfully at maximum speed!");
       } catch (err) {
         hideLoader();
         alert("Error forwarding cases: " + err.message);
