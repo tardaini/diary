@@ -26,6 +26,32 @@
       color: var(--text);
     }
 
+    /* Sync Indicator Bar */
+    .sync-status-bar {
+      background: #0f172a;
+      color: #94a3b8;
+      font-size: 0.8rem;
+      padding: 0.4rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #334155;
+    }
+
+    .sync-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-weight: bold;
+      padding: 0.2rem 0.6rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+    }
+
+    .sync-badge.online { background: #16a34a; color: white; }
+    .sync-badge.offline { background: #dc2626; color: white; }
+    .sync-badge.syncing { background: #d97706; color: white; }
+
     /* Toast Notification Banner */
     #copyToast {
       position: fixed;
@@ -453,7 +479,7 @@
       color: #0369a1;
     }
 
-    /* Multi-Window Modal Overhaul (Draggable & Movable Windows) */
+    /* Multi-Window Modal Overhaul */
     .modal {
       display: none;
       position: fixed;
@@ -477,7 +503,7 @@
       box-shadow: 0 15px 35px rgba(0,0,0,0.25);
     }
 
-    /* OS Window Style Modal Controls with Draggable Titlebar */
+    /* OS Window Style Modal Controls */
     .window-modal-content {
       padding: 0 !important;
       overflow: hidden !important;
@@ -713,7 +739,7 @@
       }
     }
 
-    /* Accordion / Collapse Styles for Court-Wise View */
+    /* Accordion / Collapse Styles */
     .court-accordion-group {
       margin-bottom: 0.75rem;
       border: 1px solid #cbd5e1;
@@ -817,6 +843,18 @@
 
   <!-- Toast Notification for Copy -->
   <div id="copyToast">📋 Case No copied! Paste on website to check status.</div>
+
+  <!-- Sync Status Top Bar -->
+  <div class="sync-status-bar">
+    <div>
+      <strong>Offline-First Engine:</strong> All updates write locally instantly.
+    </div>
+    <div style="display: flex; align-items: center; gap: 0.8rem;">
+      <span id="syncBadge" class="sync-badge online">● Online</span>
+      <span id="pendingQueueCount" style="font-size: 0.78rem;">Pending Sync: 0</span>
+      <button onclick="triggerManualSync()" style="margin:0; padding:0.2rem 0.6rem; font-size:0.75rem; background:#0284c7; width:auto;">🔄 Sync Now</button>
+    </div>
+  </div>
 
   <!-- Full Screen Loader Overlay -->
   <div id="globalLoaderOverlay">
@@ -1079,7 +1117,7 @@
         </div>
       </div>
       <div class="window-body">
-        <p style="font-size: 0.88rem; color: #475569; margin-top:0;">Securely export your entire database into a backup JSON file or restore a previous backup.</p>
+        <p style="font-size: 0.88rem; color: #475569; margin-top:0;">Securely export your entire local database into a JSON backup file or restore a previous backup.</p>
         
         <div style="margin-top: 1.2rem; display: flex; flex-direction: column; gap: 1rem;">
           <div>
@@ -1320,26 +1358,6 @@
     </div>
   </div>
 
-  <!-- Court Cases Modal -->
-  <div id="courtCasesModal" class="modal">
-    <div class="modal-content window-modal-content" id="courtCasesWindowContent" style="max-width: 900px;">
-      <div class="window-titlebar" onmousedown="startDrag(event, 'courtCasesWindowContent')">
-        <div class="window-title" id="courtModalHeaderTitle">Cases under Selected Court</div>
-        <div class="window-controls">
-          <button type="button" class="window-btn" onclick="toggleWindowMinimize('courtCasesWindowContent')" title="Minimize">_</button>
-          <button type="button" class="window-btn" onclick="toggleWindowMaximize('courtCasesWindowContent')" title="Maximize / Restore">□</button>
-          <button type="button" class="window-btn btn-close-win" onclick="closeCourtCasesModal()" title="Close Window">✕</button>
-        </div>
-      </div>
-      <div class="window-body">
-        <div id="courtCasesModalBody"></div>
-        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-          <button class="btn-secondary" style="margin-top: 0; width: 100%;" onclick="closeCourtCasesModal()">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- History / Hearing Modal -->
   <div id="historyModal" class="modal">
     <div class="modal-content window-modal-content" id="historyWindowContent" style="max-width: 850px;">
@@ -1371,7 +1389,7 @@
 
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem;">
               <div>
-                <label for="hearingFee">Hearing Fee ($/₹)</label>
+                <label for="hearingFee">Hearing Fee (₹)</label>
                 <input type="number" id="hearingFee" min="0" step="any" placeholder="e.g. 1500">
               </div>
               <div>
@@ -1423,6 +1441,103 @@
   </div>
 
   <script>
+    /* --- OFFLINE-FIRST PERSISTENCE & QUEUE ENGINE --- */
+    const STORAGE_KEY_CASES = 'adv_diary_cases_v2';
+    const STORAGE_KEY_COURTS = 'adv_diary_courts_v2';
+    const STORAGE_KEY_STATUSES = 'adv_diary_statuses_v2';
+    const STORAGE_KEY_STAGES = 'adv_diary_stages_v2';
+    const STORAGE_KEY_QUEUE = 'adv_diary_sync_queue_v2';
+
+    let cases = [];
+    let syncQueue = [];
+    let isSyncing = false;
+
+    let courtOptions = [
+      "1. SDO", "2. ASDO", "3. T", "4. AT", "5. NTS", "6. NTB", "7. RA", "8. GN"
+    ];
+    let statusOptions = ["Ongoing", "Dropped", "Final"];
+    let stageOptions = [
+      "NA", "साक्ष्‍य प्रतिवादी", "उत्तर प्रतिवाद पत्र", "वाद बिन्‍दु निर्धारण", 
+      "आदेश हेतु सुरक्षित", "प्रतिवाद पत्र", "बहस", "साक्ष्‍य वादी", 
+      "प्रतीक्षा अवर न्‍यायालय पत्रावली", "निस्‍तारण प्रार्थनापत्र", "ग्राह्यता", 
+      "प्रतीक्षा नोटिस तामीला", "अन्य"
+    ];
+
+    function initLocalStorageData() {
+      try {
+        const storedCases = localStorage.getItem(STORAGE_KEY_CASES);
+        if (storedCases) cases = JSON.parse(storedCases);
+
+        const storedCourts = localStorage.getItem(STORAGE_KEY_COURTS);
+        if (storedCourts) courtOptions = JSON.parse(storedCourts);
+
+        const storedStatuses = localStorage.getItem(STORAGE_KEY_STATUSES);
+        if (storedStatuses) statusOptions = JSON.parse(storedStatuses);
+
+        const storedStages = localStorage.getItem(STORAGE_KEY_STAGES);
+        if (storedStages) stageOptions = JSON.parse(storedStages);
+
+        const storedQueue = localStorage.getItem(STORAGE_KEY_QUEUE);
+        if (storedQueue) syncQueue = JSON.parse(storedQueue);
+      } catch(e) {
+        console.error("Local storage read error: ", e);
+      }
+      updateSyncStatusUI();
+    }
+
+    function saveStateLocally() {
+      try {
+        localStorage.setItem(STORAGE_KEY_CASES, JSON.stringify(cases));
+        localStorage.setItem(STORAGE_KEY_COURTS, JSON.stringify(courtOptions));
+        localStorage.setItem(STORAGE_KEY_STATUSES, JSON.stringify(statusOptions));
+        localStorage.setItem(STORAGE_KEY_STAGES, JSON.stringify(stageOptions));
+        localStorage.setItem(STORAGE_KEY_QUEUE, JSON.stringify(syncQueue));
+      } catch(e) {
+        console.error("Local storage save error: ", e);
+      }
+      updateSyncStatusUI();
+    }
+
+    function enqueueSyncItem(action, payload) {
+      syncQueue.push({
+        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+        action: action, // 'SET_CASE', 'DELETE_CASE', 'SET_COURTS', 'SET_STATUSES', 'SET_STAGES'
+        payload: payload,
+        timestamp: Date.now()
+      });
+      saveStateLocally();
+      triggerBackgroundSync();
+    }
+
+    function updateSyncStatusUI() {
+      const badge = document.getElementById('syncBadge');
+      const countEl = document.getElementById('pendingQueueCount');
+
+      if (countEl) countEl.innerText = `Pending Sync: ${syncQueue.length}`;
+
+      if (!badge) return;
+
+      if (!navigator.onLine) {
+        badge.className = 'sync-badge offline';
+        badge.innerText = '● Offline';
+      } else if (isSyncing) {
+        badge.className = 'sync-badge syncing';
+        badge.innerText = '● Syncing...';
+      } else {
+        badge.className = 'sync-badge online';
+        badge.innerText = syncQueue.length > 0 ? `● Pending (${syncQueue.length})` : '● Synced & Online';
+      }
+    }
+
+    window.addEventListener('online', () => {
+      updateSyncStatusUI();
+      triggerBackgroundSync();
+    });
+
+    window.addEventListener('offline', () => {
+      updateSyncStatusUI();
+    });
+
     /* --- WINDOW DRAGGING LOGIC --- */
     let isDragging = false;
     let activeWindow = null;
@@ -1466,23 +1581,6 @@
       document.removeEventListener('mousemove', onDrag);
       document.removeEventListener('mouseup', stopDrag);
     }
-
-    /* --- DYNAMIC PROCEEDINGS / STAGE OPTIONS --- */
-    let stageOptions = [
-      "NA",
-      "साक्ष्‍य प्रतिवादी",
-      "उत्तर प्रतिवाद पत्र",
-      "वाद बिन्‍दु निर्धारण",
-      "आदेश हेतु सुरक्षित",
-      "प्रतिवाद पत्र",
-      "बहस",
-      "साक्ष्‍य वादी",
-      "प्रतीक्षा अवर न्‍यायालय पत्रावली",
-      "निस्‍तारण प्रार्थनापत्र",
-      "ग्राह्यता",
-      "प्रतीक्षा नोटिस तामीला",
-      "अन्य"
-    ];
 
     /* --- MULTI-DOCUMENT MANAGEMENT --- */
     let tempCaseDocuments = [];
@@ -1554,9 +1652,7 @@
 
     function viewTempDocument(idx) {
       const doc = tempCaseDocuments[idx];
-      if (doc) {
-        openDocumentViewer(doc.dataUrl, doc.name);
-      }
+      if (doc) openDocumentViewer(doc.dataUrl, doc.name);
     }
 
     /* --- HYPERLINK & CLIPBOARD HANDLER --- */
@@ -1599,9 +1695,7 @@
       const toast = document.getElementById('copyToast');
       toast.innerText = `📋 Case No "${caseNo}" copied! Paste on website to check status.`;
       toast.style.display = 'block';
-      setTimeout(() => {
-        toast.style.display = 'none';
-      }, 4000);
+      setTimeout(() => { toast.style.display = 'none'; }, 4000);
     }
 
     /* --- LOADER CONTROLLER --- */
@@ -1632,23 +1726,51 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    let cases = [];
-    let courtOptions = [
-      "1. SDO",
-      "2. ASDO",
-      "3. T",
-      "4. AT",
-      "5. NTS",
-      "6. NTB",
-      "7. RA",
-      "8. GN"
-    ];
-    let statusOptions = [
-      "Ongoing",
-      "Dropped",
-      "Final"
-    ];
     let currentFilter = 'All';
+
+    /* --- AUTOMATIC BACKGROUND SYNC ENGINE --- */
+    async function triggerBackgroundSync() {
+      if (isSyncing || !navigator.onLine || !auth.currentUser || syncQueue.length === 0) return;
+
+      isSyncing = true;
+      updateSyncStatusUI();
+
+      try {
+        while (syncQueue.length > 0 && navigator.onLine) {
+          const item = syncQueue[0];
+          if (item.action === 'SET_CASE') {
+            await db.collection('cases').doc(item.payload.id).set(item.payload);
+          } else if (item.action === 'DELETE_CASE') {
+            await db.collection('cases').doc(item.payload.id).delete();
+          } else if (item.action === 'SET_COURTS') {
+            await db.collection('settings').doc('courts').set({ options: item.payload });
+          } else if (item.action === 'SET_STATUSES') {
+            await db.collection('settings').doc('statuses').set({ options: item.payload });
+          } else if (item.action === 'SET_STAGES') {
+            await db.collection('settings').doc('stages').set({ options: item.payload });
+          }
+          syncQueue.shift();
+          saveStateLocally();
+        }
+      } catch (err) {
+        console.error("Background sync error: ", err);
+      } finally {
+        isSyncing = false;
+        updateSyncStatusUI();
+      }
+    }
+
+    function triggerManualSync() {
+      if (!navigator.onLine) {
+        alert("You are currently offline. Connect to the internet to sync with Firebase.");
+        return;
+      }
+      showLoader("Syncing Local Data with Cloud...");
+      triggerBackgroundSync().then(() => {
+        hideLoader();
+        alert("Sync attempt completed!");
+      });
+    }
 
     /* --- PRINT INVOICE GENERATOR --- */
     function printCaseInvoice(caseId) {
@@ -1807,22 +1929,15 @@
       }
     }
 
-    async function deleteCaseAttachedDocument(caseId, docIdx) {
+    function deleteCaseAttachedDocument(caseId, docIdx) {
       if (!confirm("Are you sure you want to delete this attached document?")) return;
       const targetCase = cases.find(c => c.id === caseId);
       if (!targetCase || !targetCase.documents) return;
 
       targetCase.documents.splice(docIdx, 1);
-      showLoader("Deleting Document...");
-      try {
-        await saveCaseToCloud(targetCase, false, true, true);
-        renderCases();
-        hideLoader();
-        alert("🗑️ Document deleted successfully!");
-      } catch (err) {
-        hideLoader();
-        alert("Error deleting document: " + err.message);
-      }
+      saveCaseLocallyAndQueue(targetCase, false);
+      renderCases();
+      alert("🗑️ Document deleted!");
     }
 
     /* TAB NAVIGATION CONTROL */
@@ -1860,7 +1975,7 @@
     auth.onAuthStateChanged((user) => {
       if (user) {
         document.getElementById('authOverlay').style.display = 'none';
-        loadDataFromCloud();
+        fetchCloudUpdatesIfOnline();
       } else {
         document.getElementById('authOverlay').style.display = 'flex';
         hideLoader();
@@ -1889,117 +2004,81 @@
       auth.signOut();
     }
 
-    /* CLOUD DATA FETCHING (FIRESTORE) */
-    async function loadDataFromCloud(silent = false) {
-      if (!silent) showLoader("Synchronizing Cloud Database...");
+    /* OFFLINE-FIRST READ & CLOUD FETCH LOGIC */
+    async function fetchCloudUpdatesIfOnline() {
+      saveAndRefresh();
+
+      if (!navigator.onLine) {
+        hideLoader();
+        return;
+      }
+
       try {
         const caseSnapshot = await db.collection('cases').get();
-        cases = [];
-        caseSnapshot.forEach(doc => {
-          cases.push({ id: doc.id, ...doc.data() });
-        });
+        if (!caseSnapshot.empty) {
+          const cloudCases = [];
+          caseSnapshot.forEach(doc => {
+            cloudCases.push({ id: doc.id, ...doc.data() });
+          });
+          cases = cloudCases;
+        }
 
         const courtDoc = await db.collection('settings').doc('courts').get();
-        if (courtDoc.exists && courtDoc.data().options) {
-          courtOptions = courtDoc.data().options;
-        }
+        if (courtDoc.exists && courtDoc.data().options) courtOptions = courtDoc.data().options;
 
         const statusDoc = await db.collection('settings').doc('statuses').get();
-        if (statusDoc.exists && statusDoc.data().options) {
-          statusOptions = statusDoc.data().options;
-        }
+        if (statusDoc.exists && statusDoc.data().options) statusOptions = statusDoc.data().options;
 
         const stageDoc = await db.collection('settings').doc('stages').get();
-        if (stageDoc.exists && stageDoc.data().options) {
-          stageOptions = stageDoc.data().options;
-        }
+        if (stageDoc.exists && stageDoc.data().options) stageOptions = stageDoc.data().options;
 
+        saveStateLocally();
         saveAndRefresh();
+        triggerBackgroundSync();
       } catch (error) {
-        console.error("Error loading data: ", error);
-        alert("Cloud Error: " + error.message);
+        console.warn("Could not pull cloud updates, operating on local data: ", error);
       } finally {
         hideLoader();
       }
     }
 
-    async function saveCaseToCloud(caseData, isNew = false, suppressAlert = false, suppressLoader = false) {
-      if (!suppressLoader) showLoader("Saving Case Details...");
-      try {
-        const cleanData = {
-          id: caseData.id || "",
-          status: caseData.status || "",
-          caseNo: caseData.caseNo || "",
-          court: caseData.court || "",
-          parties: caseData.parties || "",
-          actSection: caseData.actSection || "NA",
-          disputeProperty: caseData.disputeProperty || "NA",
-          clientName: caseData.clientName || "",
-          clientPhone: caseData.clientPhone || "",
-          client: caseData.client || "",
-          nextDate: caseData.nextDate || "",
-          stage: caseData.stage || "",
-          causeNo: caseData.causeNo !== undefined && caseData.causeNo !== null ? String(caseData.causeNo) : "",
-          documents: Array.isArray(caseData.documents) ? caseData.documents : [],
-          history: Array.isArray(caseData.history) ? caseData.history.map(h => ({
-            date: h.date || "",
-            stage: h.stage || "",
-            notes: h.notes || "",
-            assignedNextDate: h.assignedNextDate || "",
-            fee: typeof h.fee === 'number' ? h.fee : 0,
-            otherFee: typeof h.otherFee === 'number' ? h.otherFee : 0
-          })) : []
-        };
+    function saveCaseLocallyAndQueue(caseData, isNew = false) {
+      const cleanData = {
+        id: caseData.id || String(Date.now()),
+        status: caseData.status || "",
+        caseNo: caseData.caseNo || "",
+        court: caseData.court || "",
+        parties: caseData.parties || "",
+        actSection: caseData.actSection || "NA",
+        disputeProperty: caseData.disputeProperty || "NA",
+        clientName: caseData.clientName || "",
+        clientPhone: caseData.clientPhone || "",
+        client: caseData.client || "",
+        nextDate: caseData.nextDate || "",
+        stage: caseData.stage || "",
+        causeNo: caseData.causeNo !== undefined && caseData.causeNo !== null ? String(caseData.causeNo) : "",
+        documents: Array.isArray(caseData.documents) ? caseData.documents : [],
+        history: Array.isArray(caseData.history) ? caseData.history : []
+      };
 
-        await db.collection('cases').doc(cleanData.id).set(cleanData);
-        await loadDataFromCloud(true);
-        
-        if (!suppressAlert) {
-          alert(isNew ? "✅ New Case registered successfully!" : "✅ Case record updated successfully!");
-        }
-      } catch (error) {
-        alert("Error saving to cloud: " + error.message);
-      } finally {
-        if (!suppressLoader) hideLoader();
+      const existingIndex = cases.findIndex(c => c.id === cleanData.id);
+      if (existingIndex >= 0) {
+        cases[existingIndex] = cleanData;
+      } else {
+        cases.push(cleanData);
       }
+
+      saveStateLocally();
+      enqueueSyncItem('SET_CASE', cleanData);
+      saveAndRefresh();
     }
 
-    async function deleteCaseFromCloud(caseId) {
-      showLoader("Deleting Case File...");
-      try {
-        await db.collection('cases').doc(caseId).delete();
-        cases = cases.filter(c => c.id !== caseId);
-        saveAndRefresh();
-        alert("🗑️ Case record deleted successfully!");
-      } catch (error) {
-        alert("Error deleting from cloud: " + error.message);
-      } finally {
-        hideLoader();
-      }
-    }
-
-    async function saveCourtOptionsToCloud() {
-      try {
-        await db.collection('settings').doc('courts').set({ options: courtOptions });
-      } catch (error) {
-        console.error("Error updating court settings: ", error);
-      }
-    }
-
-    async function saveStatusOptionsToCloud() {
-      try {
-        await db.collection('settings').doc('statuses').set({ options: statusOptions });
-      } catch (error) {
-        console.error("Error updating status settings: ", error);
-      }
-    }
-
-    async function saveStageOptionsToCloud() {
-      try {
-        await db.collection('settings').doc('stages').set({ options: stageOptions });
-      } catch (error) {
-        console.error("Error updating stage settings: ", error);
-      }
+    function deleteCaseLocallyAndQueue(caseId) {
+      cases = cases.filter(c => c.id !== caseId);
+      saveStateLocally();
+      enqueueSyncItem('DELETE_CASE', { id: caseId });
+      saveAndRefresh();
+      alert("🗑️ Case record deleted locally!");
     }
 
     const caseForm = document.getElementById('caseForm');
@@ -2153,8 +2232,7 @@
       }, 400);
     }
 
-    /* --- FAST BATCH RESTORATION --- */
-    async function importDatabaseBackup() {
+    function importDatabaseBackup() {
       const fileInput = document.getElementById('restoreFile');
       if (!fileInput.files || fileInput.files.length === 0) {
         alert("Please select a JSON backup file to restore.");
@@ -2164,7 +2242,7 @@
       const file = fileInput.files[0];
       const reader = new FileReader();
 
-      reader.onload = async function(e) {
+      reader.onload = function(e) {
         try {
           const parsed = JSON.parse(e.target.result);
           if (!parsed.cases || !Array.isArray(parsed.cases)) {
@@ -2172,44 +2250,27 @@
             return;
           }
 
-          if (confirm(`Restore backup and sync ${parsed.cases.length} case records using high-speed batch processing?`)) {
-            showLoader("Restoring Database Backup (Fast Batch Mode)...");
-
+          if (confirm(`Restore backup and overwrite ${parsed.cases.length} case records locally?`)) {
+            cases = parsed.cases;
             if (parsed.courtOptions) courtOptions = parsed.courtOptions;
             if (parsed.statusOptions) statusOptions = parsed.statusOptions;
             if (parsed.stageOptions) stageOptions = parsed.stageOptions;
 
-            await saveCourtOptionsToCloud();
-            await saveStatusOptionsToCloud();
-            await saveStageOptionsToCloud();
-
-            // Firestore batch write limit is 500 writes per batch commit
-            const batchSize = 500;
-            for (let i = 0; i < parsed.cases.length; i += batchSize) {
-              const batch = db.batch();
-              const chunk = parsed.cases.slice(i, i + batchSize);
-              chunk.forEach(c => {
-                const docRef = db.collection('cases').doc(c.id || db.collection('cases').doc().id);
-                batch.set(docRef, c);
-              });
-              await batch.commit();
-            }
-
-            await loadDataFromCloud(true);
+            saveStateLocally();
+            saveAndRefresh();
             closeBackupModal();
-            alert("✅ Backup successfully restored and synced at maximum speed!");
+            alert("✅ Backup successfully restored locally!");
+            triggerBackgroundSync();
           }
         } catch (err) {
           alert("Error parsing backup file: " + err.message);
-        } finally {
-          hideLoader();
         }
       };
 
       reader.readAsText(file);
     }
 
-    /* --- BULK & SINGLE UPDATE LOG BOOK HANDLERS (FAST BATCHED) --- */
+    /* --- BULK UPDATE LOG BOOK HANDLERS --- */
     function openBulkLogModal() {
       const todayStr = new Date().toISOString().split('T')[0];
       document.getElementById('bulkLogDate').value = todayStr;
@@ -2367,7 +2428,7 @@
       document.querySelectorAll('.logbook-checkbox').forEach(cb => cb.checked = false);
     }
 
-    async function submitForwardSingleLogbook(caseId) {
+    function submitForwardSingleLogbook(caseId) {
       const container = document.getElementById('bulkLogCasesContainer');
       const card = container.querySelector(`.logbook-case-card[data-case-id="${caseId}"]`);
       if (!card) return;
@@ -2393,10 +2454,65 @@
         return;
       }
 
-      if (!confirm(`Forward case No "${targetCase.caseNo}" to ${nextDateVal}?`)) return;
+      if (!targetCase.history) targetCase.history = [];
+      targetCase.history.push({
+        date: currentDate,
+        stage: stageVal || targetCase.stage || 'Hearing',
+        notes: finalNotes,
+        assignedNextDate: nextDateVal,
+        fee: feeVal,
+        otherFee: otherFeeVal
+      });
 
-      showLoader("Updating & Forwarding Case (Fast Mode)...");
-      try {
+      targetCase.status = statusVal || targetCase.status;
+      targetCase.stage = stageVal || targetCase.stage;
+      targetCase.nextDate = nextDateVal;
+
+      saveCaseLocallyAndQueue(targetCase, false);
+      loadBulkLogCases();
+      alert("✅ Case updated locally!");
+    }
+
+    function submitForwardAllLogbook() {
+      const container = document.getElementById('bulkLogCasesContainer');
+      const cards = container.querySelectorAll('.logbook-case-card');
+      const checkedCards = Array.from(cards).filter(card => card.querySelector('.logbook-checkbox').checked);
+
+      if (checkedCards.length === 0) {
+        alert("Please select at least one case to update/forward.");
+        return;
+      }
+
+      const masterStatus = document.getElementById('masterStatusSelect').value;
+      const masterNextDate = document.getElementById('masterNextDate').value;
+      const masterNotesSelect = document.getElementById('masterNotesSelect').value;
+      const masterNotesText = document.getElementById('masterNotesText').value.trim();
+
+      let masterProceedings = masterNotesSelect === 'CUSTOM' ? masterNotesText : masterNotesSelect;
+      const currentDate = document.getElementById('bulkLogDate').value;
+
+      for (const card of checkedCards) {
+        const caseId = card.dataset.caseId;
+        const targetCase = cases.find(c => c.id === caseId);
+        if (!targetCase) continue;
+
+        const statusVal = card.querySelector('.logbook-status').value;
+        const nextDateVal = card.querySelector('.logbook-nextdate').value || masterNextDate;
+        const feeVal = parseFloat(card.querySelector('.logbook-fee').value) || 0;
+        const otherFeeVal = parseFloat(card.querySelector('.logbook-otherfee').value) || 0;
+        
+        const stageSelectEl = card.querySelector('.logbook-stage');
+        const stageCustomEl = card.querySelector('.logbook-stage-custom');
+        let stageVal = stageSelectEl.value === 'CUSTOM' ? stageCustomEl.value.trim() : stageSelectEl.value;
+
+        const notesVal = card.querySelector('.logbook-notes').value.trim();
+        const finalNotes = notesVal || masterProceedings || stageVal || 'Hearing outcome updated';
+
+        if (!nextDateVal) {
+          alert(`Please provide a next hearing date for case ${targetCase.caseNo}.`);
+          return;
+        }
+
         if (!targetCase.history) targetCase.history = [];
         targetCase.history.push({
           date: currentDate,
@@ -2407,115 +2523,15 @@
           otherFee: otherFeeVal
         });
 
-        targetCase.status = statusVal || targetCase.status;
+        targetCase.status = statusVal || masterStatus || targetCase.status;
         targetCase.stage = stageVal || targetCase.stage;
         targetCase.nextDate = nextDateVal;
 
-        await saveCaseToCloud(targetCase, false, true, true);
-        await loadDataFromCloud(true);
-        loadBulkLogCases();
-        hideLoader();
-        alert("✅ Case updated and forwarded successfully!");
-      } catch (err) {
-        hideLoader();
-        alert("Error forwarding case: " + err.message);
-      }
-    }
-
-    /* --- HIGHEST SPEED BULK SUBMISSION USING FIRESTORE BATCH --- */
-    async function submitForwardAllLogbook() {
-      const container = document.getElementById('bulkLogCasesContainer');
-      const cards = container.querySelectorAll('.logbook-case-card');
-      const checkedCards = Array.from(cards).filter(card => card.querySelector('.logbook-checkbox').checked);
-
-      if (checkedCards.length === 0) {
-        alert("Please select at least one case to update/forward.");
-        return;
+        saveCaseLocallyAndQueue(targetCase, false);
       }
 
-      if (!confirm(`Update and forward ${checkedCards.length} selected case(s) with lightning-fast batch submission?`)) return;
-
-      showLoader("Submitting All Cases via Fast Batch Write...");
-      try {
-        const masterStatus = document.getElementById('masterStatusSelect').value;
-        const masterNextDate = document.getElementById('masterNextDate').value;
-        const masterNotesSelect = document.getElementById('masterNotesSelect').value;
-        const masterNotesText = document.getElementById('masterNotesText').value.trim();
-
-        let masterProceedings = masterNotesSelect === 'CUSTOM' ? masterNotesText : masterNotesSelect;
-        const currentDate = document.getElementById('bulkLogDate').value;
-
-        const batch = db.batch();
-
-        for (const card of checkedCards) {
-          const caseId = card.dataset.caseId;
-          const targetCase = cases.find(c => c.id === caseId);
-          if (!targetCase) continue;
-
-          const statusVal = card.querySelector('.logbook-status').value;
-          const nextDateVal = card.querySelector('.logbook-nextdate').value || masterNextDate;
-          const feeVal = parseFloat(card.querySelector('.logbook-fee').value) || 0;
-          const otherFeeVal = parseFloat(card.querySelector('.logbook-otherfee').value) || 0;
-          
-          const stageSelectEl = card.querySelector('.logbook-stage');
-          const stageCustomEl = card.querySelector('.logbook-stage-custom');
-          let stageVal = stageSelectEl.value === 'CUSTOM' ? stageCustomEl.value.trim() : stageSelectEl.value;
-
-          const notesVal = card.querySelector('.logbook-notes').value.trim();
-          const finalNotes = notesVal || masterProceedings || stageVal || 'Hearing outcome updated';
-
-          if (!nextDateVal) {
-            alert(`Please provide a next hearing date for case ${targetCase.caseNo}.`);
-            hideLoader();
-            return;
-          }
-
-          if (!targetCase.history) targetCase.history = [];
-          targetCase.history.push({
-            date: currentDate,
-            stage: stageVal || targetCase.stage || 'Hearing',
-            notes: finalNotes,
-            assignedNextDate: nextDateVal,
-            fee: feeVal,
-            otherFee: otherFeeVal
-          });
-
-          targetCase.status = statusVal || masterStatus || targetCase.status;
-          targetCase.stage = stageVal || targetCase.stage;
-          targetCase.nextDate = nextDateVal;
-
-          const cleanData = {
-            id: targetCase.id,
-            status: targetCase.status || "",
-            caseNo: targetCase.caseNo || "",
-            court: targetCase.court || "",
-            parties: targetCase.parties || "",
-            actSection: targetCase.actSection || "NA",
-            disputeProperty: targetCase.disputeProperty || "NA",
-            clientName: targetCase.clientName || "",
-            clientPhone: targetCase.clientPhone || "",
-            client: targetCase.client || "",
-            nextDate: targetCase.nextDate || "",
-            stage: targetCase.stage || "",
-            causeNo: targetCase.causeNo !== undefined && targetCase.causeNo !== null ? String(targetCase.causeNo) : "",
-            documents: Array.isArray(targetCase.documents) ? targetCase.documents : [],
-            history: targetCase.history
-          };
-
-          const docRef = db.collection('cases').doc(cleanData.id);
-          batch.set(docRef, cleanData);
-        }
-
-        // Commit all changes in a single lightning-fast atomic round trip
-        await batch.commit();
-        await loadDataFromCloud(true);
-        closeBulkLogModal();
-        hideLoader();
-        alert("✅ All selected cases updated and submitted to Firebase instantaneously!");
-      } catch (err) {
-        hideLoader();
-        alert("Error in batch submission: " + err.message);
-      }
+      closeBulkLogModal();
+      alert("✅ Selected cases updated locally!");
     }
 
     /* --- CASE LIST MODAL & PRINTING --- */
@@ -2585,11 +2601,11 @@
       });
     }
 
-    async function updateCaseCauseNo(caseId, value) {
+    function updateCaseCauseNo(caseId, value) {
       const targetCase = cases.find(c => c.id === caseId);
       if (targetCase) {
         targetCase.causeNo = value.trim();
-        await saveCaseToCloud(targetCase, false, true, true);
+        saveCaseLocallyAndQueue(targetCase, false);
       }
     }
 
@@ -2675,7 +2691,7 @@
       printWindow.document.close();
     }
 
-    /* --- ADDITIONAL MODALS & LOGIC --- */
+    /* --- COURT MODALS & ACCORDION --- */
     function openCourtCasesModal(courtName) {
       document.getElementById('courtModalHeaderTitle').innerText = `Cases under Court: ${courtName}`;
       const bodyContainer = document.getElementById('courtCasesModalBody');
@@ -2736,10 +2752,10 @@
       headerEl.parentElement.classList.toggle('expanded');
     }
 
-    /* --- STANDARD CRUD & FORM SUBMISSION --- */
+    /* --- CASE FORM & LIST rendering --- */
     function handleCaseSubmit(e) {
       e.preventDefault();
-      const id = document.getElementById('caseId').value || db.collection('cases').doc().id;
+      const id = document.getElementById('caseId').value || String(Date.now());
       const status = document.getElementById('status').value;
       const caseNo = document.getElementById('caseNo').value.trim();
       const court = document.getElementById('court').value;
@@ -2756,27 +2772,15 @@
       const causeNo = existingCase ? existingCase.causeNo || "" : "";
 
       const newCaseObj = {
-        id,
-        status,
-        caseNo,
-        court,
-        parties,
-        actSection,
-        disputeProperty,
-        clientName,
-        clientPhone,
-        nextDate,
-        stage,
-        causeNo,
-        documents: tempCaseDocuments,
-        history
+        id, status, caseNo, court, parties, actSection, disputeProperty,
+        clientName, clientPhone, nextDate, stage, causeNo,
+        documents: tempCaseDocuments, history
       };
 
       const isNew = !existingCase;
-      saveCaseToCloud(newCaseObj, isNew).then(() => {
-        resetForm();
-        switchTab('activeCasesTab', document.querySelector('.nav-tab-btn:nth-child(1)'));
-      });
+      saveCaseLocallyAndQueue(newCaseObj, isNew);
+      resetForm();
+      switchTab('activeCasesTab', document.querySelector('.nav-tab-btn:nth-child(1)'));
     }
 
     function resetForm() {
@@ -2856,7 +2860,7 @@
                   <button type="button" class="btn-action btn-invoice" onclick="printCaseInvoice('${c.id}')">🖨️ Invoice</button>
                   <button type="button" class="btn-action btn-history" onclick="openHistoryModal('${c.id}')">📖 History</button>
                   <button type="button" class="btn-action btn-edit" onclick="editCase('${c.id}')">✎ Edit</button>
-                  <button type="button" class="btn-action btn-delete" onclick="deleteCaseFromCloud('${c.id}')">🗑️ Delete</button>
+                  <button type="button" class="btn-action btn-delete" onclick="deleteCaseLocallyAndQueue('${c.id}')">🗑️ Delete</button>
                 </div>
               </td>
             </tr>
@@ -3002,7 +3006,7 @@
       });
     }
 
-    async function handleHearingSubmit(e) {
+    function handleHearingSubmit(e) {
       e.preventDefault();
       const caseId = document.getElementById('modalCaseId').value;
       const targetCase = cases.find(c => c.id === caseId);
@@ -3036,13 +3040,10 @@
       targetCase.nextDate = newNextDate;
       if (stage) targetCase.stage = stage;
 
-      showLoader("Saving Hearing Outcome...");
-      await saveCaseToCloud(targetCase, false, true, true);
-      hideLoader();
-
+      saveCaseLocallyAndQueue(targetCase, false);
       openHistoryModal(caseId);
       renderCases();
-      alert("✅ Hearing outcome recorded successfully!");
+      alert("✅ Hearing outcome recorded!");
     }
 
     function editHearingRecord(caseId, index) {
@@ -3076,16 +3077,13 @@
       }
     }
 
-    async function deleteHearingRecord(caseId, index) {
+    function deleteHearingRecord(caseId, index) {
       if (!confirm("Are you sure you want to delete this hearing record?")) return;
       const targetCase = cases.find(c => c.id === caseId);
       if (!targetCase || !targetCase.history) return;
 
       targetCase.history.splice(index, 1);
-      showLoader("Deleting Hearing Record...");
-      await saveCaseToCloud(targetCase, false, true, true);
-      hideLoader();
-
+      saveCaseLocallyAndQueue(targetCase, false);
       openHistoryModal(caseId);
       renderCases();
     }
@@ -3263,7 +3261,7 @@
       document.getElementById('feeResultsCard').style.display = 'none';
     }
 
-    /* --- FORWARD CASE MODAL (FAST BATCH MODE) --- */
+    /* --- FORWARD CASE MODAL --- */
     function openForwardCaseModal() {
       const todayStr = new Date().toISOString().split('T')[0];
       document.getElementById('forwardSourceDate').value = todayStr;
@@ -3331,7 +3329,7 @@
       document.querySelectorAll('.forward-case-checkbox').forEach(cb => cb.checked = masterCheckbox.checked);
     }
 
-    async function submitForwardCases(e) {
+    function submitForwardCases(e) {
       e.preventDefault();
       const targetDate = document.getElementById('forwardTargetDate').value;
       const sourceDate = document.getElementById('forwardSourceDate').value;
@@ -3348,61 +3346,29 @@
         return;
       }
 
-      if (!confirm(`Are you sure you want to forward ${checkboxes.length} case(s) to ${targetDate} using fast batch commit?`)) return;
-
-      showLoader("Forwarding Cases (Fast Batch Mode)...");
-      try {
-        const batch = db.batch();
-        for (const cb of checkboxes) {
-          const caseId = cb.value;
-          const targetCase = cases.find(c => c.id === caseId);
-          if (targetCase) {
-            if (!targetCase.history) targetCase.history = [];
-            targetCase.history.push({
-              date: sourceDate,
-              stage: targetCase.stage || 'Hearing',
-              notes: reason,
-              assignedNextDate: targetDate,
-              fee: 0,
-              otherFee: 0
-            });
-            targetCase.nextDate = targetDate;
-
-            const cleanData = {
-              id: targetCase.id,
-              status: targetCase.status || "",
-              caseNo: targetCase.caseNo || "",
-              court: targetCase.court || "",
-              parties: targetCase.parties || "",
-              actSection: targetCase.actSection || "NA",
-              disputeProperty: targetCase.disputeProperty || "NA",
-              clientName: targetCase.clientName || "",
-              clientPhone: targetCase.clientPhone || "",
-              client: targetCase.client || "",
-              nextDate: targetCase.nextDate || "",
-              stage: targetCase.stage || "",
-              causeNo: targetCase.causeNo !== undefined && targetCase.causeNo !== null ? String(targetCase.causeNo) : "",
-              documents: Array.isArray(targetCase.documents) ? targetCase.documents : [],
-              history: targetCase.history
-            };
-
-            const docRef = db.collection('cases').doc(cleanData.id);
-            batch.set(docRef, cleanData);
-          }
+      for (const cb of checkboxes) {
+        const caseId = cb.value;
+        const targetCase = cases.find(c => c.id === caseId);
+        if (targetCase) {
+          if (!targetCase.history) targetCase.history = [];
+          targetCase.history.push({
+            date: sourceDate,
+            stage: targetCase.stage || 'Hearing',
+            notes: reason,
+            assignedNextDate: targetDate,
+            fee: 0,
+            otherFee: 0
+          });
+          targetCase.nextDate = targetDate;
+          saveCaseLocallyAndQueue(targetCase, false);
         }
-
-        await batch.commit();
-        await loadDataFromCloud(true);
-        closeForwardCaseModal();
-        hideLoader();
-        alert("✅ Cases forwarded successfully at maximum speed!");
-      } catch (err) {
-        hideLoader();
-        alert("Error forwarding cases: " + err.message);
       }
+
+      closeForwardCaseModal();
+      alert("✅ Selected cases forwarded locally!");
     }
 
-    /* --- SETTINGS / COURT / STATUS / STAGE MANAGEMENT MODALS --- */
+    /* --- OPTIONS MODALS --- */
     function openAddCourtModal() {
       document.getElementById('courtModalTitle').innerText = 'Add New Court / Forum & Judge';
       document.getElementById('newCourtInput').value = '';
@@ -3413,10 +3379,7 @@
 
     function openEditCourtModal() {
       const currentCourt = document.getElementById('court').value;
-      if (!currentCourt) {
-        alert("No court selected to edit.");
-        return;
-      }
+      if (!currentCourt) return;
       document.getElementById('courtModalTitle').innerText = 'Edit Selected Court / Forum';
       document.getElementById('newCourtInput').value = currentCourt;
       document.getElementById('oldCourtVal').value = currentCourt;
@@ -3428,45 +3391,36 @@
       document.getElementById('addCourtModal').style.display = 'none';
     }
 
-    async function saveNewCourt() {
+    function saveNewCourt() {
       const val = document.getElementById('newCourtInput').value.trim();
       const oldVal = document.getElementById('oldCourtVal').value;
 
-      if (!val) {
-        alert("Please enter a valid court name.");
-        return;
-      }
+      if (!val) return;
 
       if (oldVal) {
         const index = courtOptions.indexOf(oldVal);
         if (index >= 0) courtOptions[index] = val;
       } else {
-        if (courtOptions.includes(val)) {
-          alert("Court option already exists.");
-          return;
-        }
-        courtOptions.push(val);
+        if (!courtOptions.includes(val)) courtOptions.push(val);
       }
 
-      showLoader("Saving Court Option...");
-      await saveCourtOptionsToCloud();
+      saveStateLocally();
+      enqueueSyncItem('SET_COURTS', courtOptions);
       saveAndRefresh();
       renderCourtDropdown(val);
       closeAddCourtModal();
-      hideLoader();
     }
 
-    async function deleteSelectedCourt() {
+    function deleteSelectedCourt() {
       const currentCourt = document.getElementById('court').value;
       if (!currentCourt) return;
 
-      if (confirm(`Are you sure you want to delete court option "${currentCourt}"?`)) {
+      if (confirm(`Delete court option "${currentCourt}"?`)) {
         courtOptions = courtOptions.filter(c => c !== currentCourt);
-        showLoader("Deleting Court Option...");
-        await saveCourtOptionsToCloud();
+        saveStateLocally();
+        enqueueSyncItem('SET_COURTS', courtOptions);
         saveAndRefresh();
         renderCourtDropdown();
-        hideLoader();
       }
     }
 
@@ -3492,7 +3446,7 @@
       document.getElementById('addStatusModal').style.display = 'none';
     }
 
-    async function saveNewStatus() {
+    function saveNewStatus() {
       const val = document.getElementById('newStatusInput').value.trim();
       const oldVal = document.getElementById('oldStatusVal').value;
 
@@ -3502,29 +3456,26 @@
         const index = statusOptions.indexOf(oldVal);
         if (index >= 0) statusOptions[index] = val;
       } else {
-        if (statusOptions.includes(val)) return;
-        statusOptions.push(val);
+        if (!statusOptions.includes(val)) statusOptions.push(val);
       }
 
-      showLoader("Saving Status...");
-      await db.collection('settings').doc('statuses').set({ options: statusOptions });
+      saveStateLocally();
+      enqueueSyncItem('SET_STATUSES', statusOptions);
       saveAndRefresh();
       renderStatusDropdown(val);
       closeAddStatusModal();
-      hideLoader();
     }
 
-    async function deleteSelectedStatus() {
+    function deleteSelectedStatus() {
       const currentStatus = document.getElementById('status').value;
       if (!currentStatus) return;
 
       if (confirm(`Delete status "${currentStatus}"?`)) {
         statusOptions = statusOptions.filter(s => s !== currentStatus);
-        showLoader("Deleting Status...");
-        await db.collection('settings').doc('statuses').set({ options: statusOptions });
+        saveStateLocally();
+        enqueueSyncItem('SET_STATUSES', statusOptions);
         saveAndRefresh();
         renderStatusDropdown();
-        hideLoader();
       }
     }
 
@@ -3537,28 +3488,26 @@
       document.getElementById('addStageModal').style.display = 'none';
     }
 
-    async function saveNewStage() {
+    function saveNewStage() {
       const val = document.getElementById('newStageInput').value.trim();
       if (!val) return;
 
       if (!stageOptions.includes(val)) stageOptions.push(val);
-      showLoader("Saving Stage...");
-      await saveStageOptionsToCloud();
+      saveStateLocally();
+      enqueueSyncItem('SET_STAGES', stageOptions);
       renderStageDropdown(val);
       closeAddStageModal();
-      hideLoader();
     }
 
-    async function deleteSelectedStage() {
+    function deleteSelectedStage() {
       const currentStage = document.getElementById('stage').value;
       if (!currentStage || currentStage === 'NA') return;
 
       if (confirm(`Delete proceedings option "${currentStage}"?`)) {
         stageOptions = stageOptions.filter(st => st !== currentStage);
-        showLoader("Deleting Proceedings Option...");
-        await saveStageOptionsToCloud();
+        saveStateLocally();
+        enqueueSyncItem('SET_STAGES', stageOptions);
         renderStageDropdown();
-        hideLoader();
       }
     }
 
@@ -3572,7 +3521,7 @@
 
       const existing = cases.filter(c => c.parties && c.parties.toLowerCase().includes(val));
       if (existing.length > 0) {
-        alertBox.innerHTML = `⚠️ Note: ${existing.length} similar case(s) found with parties matching "${document.getElementById('parties').value}". Check if client already exists.`;
+        alertBox.innerHTML = `⚠️ Note: ${existing.length} similar case(s) found matching "${document.getElementById('parties').value}". Check client record.`;
         alertBox.style.display = 'block';
       } else {
         alertBox.style.display = 'none';
@@ -3580,8 +3529,9 @@
     }
 
     window.onload = function() {
+      initLocalStorageData();
       setDefaultDate();
-      renderCalendar();
+      saveAndRefresh();
     };
   </script>
 </body>
