@@ -451,6 +451,15 @@
     }
 
     th { background-color: #f1f5f9; color: var(--primary); font-size: 0.8rem; text-transform: uppercase; }
+    
+    th.sortable {
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.2s ease;
+    }
+    th.sortable:hover {
+      background-color: #e2e8f0;
+    }
 
     .actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
 
@@ -1097,6 +1106,9 @@
         </div>
       </div>
       <div class="window-body">
+        <div style="margin-bottom: 0.8rem;">
+          <input type="text" id="courtCasesSearchInput" placeholder="🔍 Search in this court by Case No, Parties, Client, Next Date..." onkeyup="filterAndSortCourtCasesModal()" style="margin-top:0;">
+        </div>
         <div id="courtCasesModalBody"></div>
         <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
           <button class="btn-secondary" style="margin-top: 0; width: 100%;" onclick="closeCourtCasesModal()">Close</button>
@@ -1451,6 +1463,10 @@
     let cases = [];
     let syncQueue = [];
     let isSyncing = false;
+
+    let activeModalCourtName = '';
+    let modalSortColumn = null;
+    let modalSortAscending = true;
 
     let courtOptions = [
       "1. SDO", "2. ASDO", "3. T", "4. AT", "5. NTS", "6. NTB", "7. RA", "8. GN"
@@ -2693,17 +2709,85 @@
 
     /* --- COURT MODALS & ACCORDION --- */
     function openCourtCasesModal(courtName) {
+      activeModalCourtName = courtName;
+      modalSortColumn = null;
+      modalSortAscending = true;
       document.getElementById('courtModalHeaderTitle').innerText = `Cases under Court: ${courtName}`;
+      document.getElementById('courtCasesSearchInput').value = '';
+      filterAndSortCourtCasesModal();
+      document.getElementById('courtCasesModal').style.display = 'flex';
+    }
+
+    function sortCourtCasesModal(columnKey) {
+      if (modalSortColumn === columnKey) {
+        modalSortAscending = !modalSortAscending;
+      } else {
+        modalSortColumn = columnKey;
+        modalSortAscending = true;
+      }
+      filterAndSortCourtCasesModal();
+    }
+
+    function filterAndSortCourtCasesModal() {
+      const searchVal = document.getElementById('courtCasesSearchInput').value.toLowerCase().trim();
       const bodyContainer = document.getElementById('courtCasesModalBody');
-      const filtered = cases.filter(c => c.court === courtName);
+      let filtered = cases.filter(c => c.court === activeModalCourtName);
+
+      if (searchVal) {
+        filtered = filtered.filter(c => 
+          (c.caseNo && c.caseNo.toLowerCase().includes(searchVal)) ||
+          (c.parties && c.parties.toLowerCase().includes(searchVal)) ||
+          (c.clientName && c.clientName.toLowerCase().includes(searchVal)) ||
+          (c.clientPhone && c.clientPhone.toLowerCase().includes(searchVal)) ||
+          (c.nextDate && c.nextDate.includes(searchVal)) ||
+          (c.status && c.status.toLowerCase().includes(searchVal))
+        );
+      }
+
+      if (modalSortColumn) {
+        filtered.sort((a, b) => {
+          let valA = '', valB = '';
+          if (modalSortColumn === 'caseNo') {
+            valA = a.caseNo || '';
+            valB = b.caseNo || '';
+          } else if (modalSortColumn === 'parties') {
+            valA = a.parties || '';
+            valB = b.parties || '';
+          } else if (modalSortColumn === 'client') {
+            valA = (a.clientName || a.client || '').toLowerCase();
+            valB = (b.clientName || b.client || '').toLowerCase();
+          } else if (modalSortColumn === 'nextDate') {
+            valA = a.nextDate || '';
+            valB = b.nextDate || '';
+          }
+          const res = valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' });
+          return modalSortAscending ? res : -res;
+        });
+      }
 
       if (filtered.length === 0) {
-        bodyContainer.innerHTML = `<p style="color:#64748b;">No cases found under ${courtName}.</p>`;
-        document.getElementById('courtCasesModal').style.display = 'flex';
+        bodyContainer.innerHTML = `<p style="color:#64748b; padding:1rem; text-align:center;">No cases found matching search criteria.</p>`;
         return;
       }
 
-      let html = `<table><thead><tr><th>Case No / CNR</th><th>Parties</th><th>Client</th><th>Next Date</th><th>Status</th><th>Actions</th></tr></thead><tbody>`;
+      const getSortIcon = (col) => {
+        if (modalSortColumn !== col) return ' ↕';
+        return modalSortAscending ? ' ▲' : ' ▼';
+      };
+
+      let html = `<table>
+        <thead>
+          <tr>
+            <th class="sortable" onclick="sortCourtCasesModal('caseNo')">Case No / CNR${getSortIcon('caseNo')}</th>
+            <th class="sortable" onclick="sortCourtCasesModal('parties')">Parties${getSortIcon('parties')}</th>
+            <th class="sortable" onclick="sortCourtCasesModal('client')">Client${getSortIcon('client')}</th>
+            <th class="sortable" onclick="sortCourtCasesModal('nextDate')">Next Date${getSortIcon('nextDate')}</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
       filtered.forEach(c => {
         let docsHtml = '';
         if (c.documents && c.documents.length > 0) {
@@ -2733,7 +2817,6 @@
       });
       html += `</tbody></table>`;
       bodyContainer.innerHTML = html;
-      document.getElementById('courtCasesModal').style.display = 'flex';
     }
 
     function closeCourtCasesModal() {
