@@ -9,6 +9,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 
   <style>
     :root {
@@ -167,6 +168,176 @@
       font-size: 0.85rem;
       margin-top: 0.8rem;
       display: none;
+    }
+
+    /* Folder (Cloud & Offline File/Folder Manager) Styles */
+    .btn-menustore { background-color: #0f766e; border: 1px solid #14b8a6; width: auto; margin: 0; }
+    .btn-menustore:hover { background-color: #115e59; }
+
+    .store-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      background: #f1f5f9;
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      margin-bottom: 0.8rem;
+    }
+
+    .store-breadcrumbs {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      background: #ffffff;
+      padding: 0.5rem 0.8rem;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      margin-bottom: 0.8rem;
+      font-size: 0.88rem;
+    }
+
+    .breadcrumb-item {
+      color: #0284c7;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .breadcrumb-item:hover { background: #e0f2fe; text-decoration: underline; }
+    .breadcrumb-item.active { color: #0f172a; cursor: default; text-decoration: none; background: #f1f5f9; }
+    .breadcrumb-sep { color: #94a3b8; font-weight: bold; }
+
+    .store-layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 1rem;
+      min-height: 360px;
+    }
+    @media (max-width: 768px) {
+      .store-layout { grid-template-columns: 1fr; }
+    }
+
+    .store-sidebar {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 0.7rem;
+      overflow-y: auto;
+      max-height: 450px;
+    }
+
+    .store-tree-title {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      color: #64748b;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+      padding-bottom: 0.3rem;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .tree-node {
+      padding: 0.32rem 0.5rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.84rem;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .tree-node:hover { background: #e2e8f0; }
+    .tree-node.active { background: #0f766e; color: #ffffff; font-weight: 600; }
+
+    .store-main-area {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 0.8rem;
+      overflow-y: auto;
+      max-height: 450px;
+    }
+
+    .store-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .store-item-card {
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 0.7rem;
+      background: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+    .store-item-card:hover {
+      border-color: #0284c7;
+      box-shadow: 0 4px 10px rgba(2, 132, 199, 0.12);
+      background: #ffffff;
+    }
+
+    .store-item-icon {
+      font-size: 2rem;
+      text-align: center;
+      margin-bottom: 0.4rem;
+      cursor: pointer;
+    }
+
+    .store-item-name {
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: #0f172a;
+      text-align: center;
+      word-break: break-word;
+      cursor: pointer;
+      margin-bottom: 0.25rem;
+    }
+    .store-item-name:hover { color: #0284c7; text-decoration: underline; }
+
+    .store-item-meta {
+      font-size: 0.72rem;
+      color: #64748b;
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .store-item-actions {
+      display: flex;
+      justify-content: center;
+      gap: 0.3rem;
+      flex-wrap: wrap;
+      border-top: 1px dashed #cbd5e1;
+      padding-top: 0.45rem;
+    }
+
+    .store-dropzone {
+      border: 2px dashed #94a3b8;
+      border-radius: 6px;
+      padding: 0.6rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: #475569;
+      background: #f8fafc;
+      margin-bottom: 0.8rem;
+      transition: all 0.2s ease;
+    }
+    .store-dropzone.dragover {
+      border-color: #0f766e;
+      background: #ccfbf1;
+      color: #0f766e;
+      font-weight: bold;
     }
 
     /* Standard Page Styling */
@@ -890,6 +1061,7 @@
     <div class="header-btns">
       <div class="filter-bar" id="filterBarContainer" style="display: none;"></div>
 
+      <button class="btn-menustore" onclick="openMenuStoreModal()">🗄️ Folder</button>
       <button class="btn-caselist" onclick="openCaseListModal()">📜 Print Case List</button>
       <button class="btn-forward" onclick="openForwardCaseModal()">⏩ Forward Case</button>
       <button class="btn-logbook" onclick="openBulkLogModal()">📖 Update Log Book</button>
@@ -1060,6 +1232,65 @@
       <div id="courtAccordionContainer" style="margin-top: 0.5rem;"></div>
     </div>
 
+  </div>
+
+  <!-- Folder (CLOUD FILE & FOLDER MANAGER) WINDOW -->
+  <div id="menuStoreModal" class="modal">
+    <div class="modal-content window-modal-content" id="menuStoreWindowContent" style="max-width: 1050px;">
+      <div class="window-titlebar" onmousedown="startDrag(event, 'menuStoreWindowContent')">
+        <div class="window-title">🗄️ Folder — Universal Cloud & Offline File/Folder Repository</div>
+        <div class="window-controls">
+          <button type="button" class="window-btn" onclick="toggleWindowMinimize('menuStoreWindowContent')" title="Minimize">_</button>
+          <button type="button" class="window-btn" onclick="toggleWindowMaximize('menuStoreWindowContent')" title="Maximize / Restore">□</button>
+          <button type="button" class="window-btn btn-close-win" onclick="closeMenuStoreModal()" title="Close Window">✕</button>
+        </div>
+      </div>
+      <div class="window-body">
+        <!-- Toolbar -->
+        <div class="store-toolbar">
+          <div style="display:flex; gap:0.45rem; flex-wrap:wrap; align-items:center;">
+            <button type="button" class="btn-action btn-court-add" style="padding:0.45rem 0.75rem;" onclick="promptCreateStoreFolder()">📁+ New Location / Folder</button>
+            <button type="button" class="btn-action btn-print" style="padding:0.45rem 0.75rem;" onclick="document.getElementById('storeFileUploadInput').click()">📄+ Upload Files</button>
+            <button type="button" class="btn-action btn-today" style="padding:0.45rem 0.75rem;" onclick="document.getElementById('storeFolderUploadInput').click()">📂+ Upload Folder</button>
+            <input type="file" id="storeFileUploadInput" multiple style="display:none;" onchange="handleStoreFilesUpload(this.files)">
+            <input type="file" id="storeFolderUploadInput" webkitdirectory directory multiple style="display:none;" onchange="handleStoreFolderUpload(this.files)">
+          </div>
+          <div style="display:flex; gap:0.5rem; align-items:center; flex:1; max-width:340px;">
+            <input type="text" id="storeSearchInput" placeholder="🔍 Search files or folders across store..." onkeyup="renderMenuStore()" style="margin:0; padding:0.42rem 0.6rem; font-size:0.84rem;">
+          </div>
+        </div>
+
+        <!-- Location Breadcrumbs -->
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+          <div class="store-breadcrumbs" id="storeBreadcrumbs" style="flex:1; margin-bottom:0.8rem;"></div>
+          <div style="font-size:0.78rem; color:#475569; margin-bottom:0.8rem;" id="storeStatsLabel">0 Folders, 0 Files</div>
+        </div>
+
+        <!-- Drag & Drop Upload Zone -->
+        <div id="storeDropZone" class="store-dropzone"
+             ondragover="handleStoreDragOver(event)"
+             ondragleave="handleStoreDragLeave(event)"
+             ondrop="handleStoreDrop(event)">
+          📥 Drag & drop files here to upload directly into current location: <strong id="storeCurrentPathLabel">/ Root Store</strong>
+        </div>
+
+        <!-- Two-Pane Layout: Folder Hierarchy Tree + Main Contents -->
+        <div class="store-layout">
+          <div class="store-sidebar">
+            <div class="store-tree-title">🗂️ Locations Hierarchy</div>
+            <div id="storeFolderTree"></div>
+          </div>
+          <div class="store-main-area">
+            <div id="storeItemsContainer" class="store-grid"></div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.9rem; flex-wrap:wrap; gap:0.5rem;">
+          <span style="font-size:0.78rem; color:#64748b;">☁️ Synced with Firebase Cloud & Local Storage — accessible from any device upon login.</span>
+          <button type="button" class="btn-secondary" style="margin:0;" onclick="closeMenuStoreModal()">Close Folder</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- PARTIES-ONLY CASE LIST WINDOW -->
@@ -1459,8 +1690,11 @@
     const STORAGE_KEY_STATUSES = 'adv_diary_statuses_v2';
     const STORAGE_KEY_STAGES = 'adv_diary_stages_v2';
     const STORAGE_KEY_QUEUE = 'adv_diary_sync_queue_v2';
+    const STORAGE_KEY_STORE_ITEMS = 'adv_diary_menu_store_v2';
 
     let cases = [];
+    let storeItems = [];
+    let currentStoreFolderId = 'root';
     let syncQueue = [];
     let isSyncing = false;
 
@@ -1495,6 +1729,9 @@
 
         const storedQueue = localStorage.getItem(STORAGE_KEY_QUEUE);
         if (storedQueue) syncQueue = JSON.parse(storedQueue);
+
+        const storedStoreItems = localStorage.getItem(STORAGE_KEY_STORE_ITEMS);
+        if (storedStoreItems) storeItems = JSON.parse(storedStoreItems);
       } catch(e) {
         console.error("Local storage read error: ", e);
       }
@@ -1508,6 +1745,7 @@
         localStorage.setItem(STORAGE_KEY_STATUSES, JSON.stringify(statusOptions));
         localStorage.setItem(STORAGE_KEY_STAGES, JSON.stringify(stageOptions));
         localStorage.setItem(STORAGE_KEY_QUEUE, JSON.stringify(syncQueue));
+        localStorage.setItem(STORAGE_KEY_STORE_ITEMS, JSON.stringify(storeItems));
       } catch(e) {
         console.error("Local storage save error: ", e);
       }
@@ -1741,6 +1979,7 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
+    const storage = firebase.storage();
 
     let currentFilter = 'All';
 
@@ -1764,6 +2003,34 @@
             await db.collection('settings').doc('statuses').set({ options: item.payload });
           } else if (item.action === 'SET_STAGES') {
             await db.collection('settings').doc('stages').set({ options: item.payload });
+          } else if (item.action === 'SET_STORE_ITEM') {
+            const storeDoc = { ...item.payload };
+            if (storeDoc.type === 'file' && storeDoc.dataUrl && !storeDoc.downloadUrl) {
+              try {
+                const storageRef = storage.ref().child(`menu_store/${storeDoc.id}_${storeDoc.name}`);
+                const snap = await storageRef.putString(storeDoc.dataUrl, 'data_url');
+                const dlUrl = await snap.ref.getDownloadURL();
+                storeDoc.downloadUrl = dlUrl;
+                const localIdx = storeItems.findIndex(x => x.id === storeDoc.id);
+                if (localIdx >= 0) {
+                  storeItems[localIdx].downloadUrl = dlUrl;
+                }
+              } catch (storageErr) {
+                console.warn("Firebase Storage upload fallback to Firestore inline:", storageErr);
+              }
+            }
+            const firestorePayload = { ...storeDoc };
+            if (firestorePayload.downloadUrl) {
+              delete firestorePayload.dataUrl;
+            }
+            await db.collection('menu_store').doc(firestorePayload.id).set(firestorePayload);
+          } else if (item.action === 'DELETE_STORE_ITEM') {
+            if (item.payload.downloadUrl) {
+              try {
+                await storage.refFromURL(item.payload.downloadUrl).delete();
+              } catch (e) { /* ignore if already removed */ }
+            }
+            await db.collection('menu_store').doc(item.payload.id).delete();
           }
           syncQueue.shift();
           saveStateLocally();
@@ -1911,19 +2178,32 @@
     }
 
     /* DOCUMENT VIEWER */
-    function openDocumentViewer(dataUrl, fileName) {
+    function openDocumentViewer(fileUrl, fileName, mimeType = '') {
       const viewerContent = document.getElementById('viewerContentArea');
       document.getElementById('viewerFileName').innerText = `📄 ${fileName}`;
 
-      if (dataUrl.startsWith('data:application/pdf')) {
-        viewerContent.innerHTML = `<iframe src="${dataUrl}" style="width:100%; height:100%; border:none;"></iframe>`;
-      } else if (dataUrl.startsWith('data:image/')) {
-        viewerContent.innerHTML = `<img src="${dataUrl}" style="max-width:100%; max-height:100%; object-fit:contain; padding:0.5rem;">`;
+      const lowerName = (fileName || '').toLowerCase();
+      const isPdf = fileUrl.startsWith('data:application/pdf') || mimeType === 'application/pdf' || lowerName.endsWith('.pdf');
+      const isImage = fileUrl.startsWith('data:image/') || mimeType.startsWith('image/') || /\.(png|jpg|jpeg|gif|webp|bmp|svg)$/.test(lowerName);
+      const isText = fileUrl.startsWith('data:text/') || mimeType.startsWith('text/') || /\.(txt|csv|json|md|log)$/.test(lowerName);
+
+      if (isPdf) {
+        viewerContent.innerHTML = `<iframe src="${fileUrl}" style="width:100%; height:100%; border:none;"></iframe>`;
+      } else if (isImage) {
+        viewerContent.innerHTML = `<img src="${fileUrl}" style="max-width:100%; max-height:100%; object-fit:contain; padding:0.5rem;">`;
+      } else if (isText && fileUrl.startsWith('data:')) {
+        try {
+          const base64Part = fileUrl.split(',')[1];
+          const decodedText = decodeURIComponent(escape(atob(base64Part)));
+          viewerContent.innerHTML = `<pre style="width:100%; height:100%; margin:0; padding:1rem; overflow:auto; background:#ffffff; color:#0f172a; font-size:0.85rem; white-space:pre-wrap; box-sizing:border-box;">${decodedText.replace(/</g, '&lt;')}</pre>`;
+        } catch (e) {
+          viewerContent.innerHTML = `<iframe src="${fileUrl}" style="width:100%; height:100%; border:none; background:white;"></iframe>`;
+        }
       } else {
         viewerContent.innerHTML = `
           <div style="text-align:center; padding:2rem;">
             <p style="color:#334155;">Preview not directly supported for this document format.</p>
-            <a href="${dataUrl}" download="${fileName}" class="btn-action btn-print" style="display:inline-block; margin-top:0.5rem; text-decoration:none;">📥 Download File</a>
+            <a href="${fileUrl}" download="${fileName}" target="_blank" class="btn-action btn-print" style="display:inline-block; margin-top:0.5rem; text-decoration:none;">📥 Download / Open File</a>
           </div>`;
       }
 
@@ -2047,6 +2327,20 @@
 
         const stageDoc = await db.collection('settings').doc('stages').get();
         if (stageDoc.exists && stageDoc.data().options) stageOptions = stageDoc.data().options;
+
+        const storeSnapshot = await db.collection('menu_store').get();
+        if (!storeSnapshot.empty) {
+          const cloudStoreItems = [];
+          storeSnapshot.forEach(doc => {
+            const cloudItem = { id: doc.id, ...doc.data() };
+            const localMatch = storeItems.find(x => x.id === cloudItem.id);
+            if (localMatch && localMatch.dataUrl && !cloudItem.dataUrl) {
+              cloudItem.dataUrl = localMatch.dataUrl;
+            }
+            cloudStoreItems.push(cloudItem);
+          });
+          storeItems = cloudStoreItems;
+        }
 
         saveStateLocally();
         saveAndRefresh();
@@ -2234,7 +2528,8 @@
           courtOptions: courtOptions,
           statusOptions: statusOptions,
           stageOptions: stageOptions,
-          cases: cases
+          cases: cases,
+          storeItems: storeItems
         };
 
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
@@ -2271,6 +2566,7 @@
             if (parsed.courtOptions) courtOptions = parsed.courtOptions;
             if (parsed.statusOptions) statusOptions = parsed.statusOptions;
             if (parsed.stageOptions) stageOptions = parsed.stageOptions;
+            if (parsed.storeItems && Array.isArray(parsed.storeItems)) storeItems = parsed.storeItems;
 
             saveStateLocally();
             saveAndRefresh();
@@ -3609,6 +3905,443 @@
       } else {
         alertBox.style.display = 'none';
       }
+    }
+
+    /* --- Folder (UNIVERSAL FILE & FOLDER REPOSITORY) --- */
+    function openMenuStoreModal() {
+      if (!currentStoreFolderId || (currentStoreFolderId !== 'root' && !storeItems.some(i => i.id === currentStoreFolderId && i.type === 'folder'))) {
+        currentStoreFolderId = 'root';
+      }
+      document.getElementById('storeSearchInput').value = '';
+      renderMenuStore();
+      document.getElementById('menuStoreModal').style.display = 'flex';
+    }
+
+    function closeMenuStoreModal() {
+      document.getElementById('menuStoreModal').style.display = 'none';
+    }
+
+    function navigateStoreFolder(folderId) {
+      currentStoreFolderId = folderId || 'root';
+      document.getElementById('storeSearchInput').value = '';
+      renderMenuStore();
+    }
+
+    function getStorePathChain(folderId) {
+      const chain = [];
+      let currId = folderId;
+      const visited = new Set();
+      while (currId && currId !== 'root' && !visited.has(currId)) {
+        visited.add(currId);
+        const folder = storeItems.find(i => i.id === currId && i.type === 'folder');
+        if (!folder) break;
+        chain.unshift(folder);
+        currId = folder.parentId;
+      }
+      return chain;
+    }
+
+    function formatFileSize(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    function getFileIcon(fileName, mimeType) {
+      const lower = (fileName || '').toLowerCase();
+      if (mimeType === 'application/pdf' || lower.endsWith('.pdf')) return '📕';
+      if ((mimeType && mimeType.startsWith('image/')) || /\.(png|jpg|jpeg|gif|webp|bmp)$/.test(lower)) return '🖼️';
+      if (/\.(doc|docx)$/.test(lower)) return '📘';
+      if (/\.(xls|xlsx|csv)$/.test(lower)) return '📗';
+      if (/\.(txt|md|rtf)$/.test(lower)) return '📝';
+      if (/\.(zip|rar|7z)$/.test(lower)) return '🗜️';
+      return '📄';
+    }
+
+    function createStoreFolderRecord(name, parentId) {
+      const cleanName = name.trim();
+      if (!cleanName) return null;
+
+      const existing = storeItems.find(i => i.type === 'folder' && i.parentId === parentId && i.name.toLowerCase() === cleanName.toLowerCase());
+      if (existing) return existing;
+
+      const folderObj = {
+        id: 'fld_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+        type: 'folder',
+        name: cleanName,
+        parentId: parentId || 'root',
+        createdAt: new Date().toISOString()
+      };
+      storeItems.push(folderObj);
+      saveStateLocally();
+      enqueueSyncItem('SET_STORE_ITEM', folderObj);
+      return folderObj;
+    }
+
+    function promptCreateStoreFolder() {
+      const folderName = prompt("Enter New Location / Folder Name (e.g. High Court Orders, Land Deeds, Client IDs):");
+      if (!folderName || !folderName.trim()) return;
+      createStoreFolderRecord(folderName.trim(), currentStoreFolderId);
+      renderMenuStore();
+    }
+
+    function readFileAsDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = err => reject(err);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function handleStoreFilesUpload(fileList) {
+      if (!fileList || fileList.length === 0) return;
+      const filesArr = Array.from(fileList);
+
+      showLoader(`Uploading ${filesArr.length} file(s) to Folder...`);
+      try {
+        for (const file of filesArr) {
+          if (file.size > 15 * 1024 * 1024) {
+            alert(`Skipped "${file.name}" because it exceeds the 15MB limit.`);
+            continue;
+          }
+          const dataUrl = await readFileAsDataURL(file);
+          const fileObj = {
+            id: 'fil_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+            type: 'file',
+            name: file.name,
+            parentId: currentStoreFolderId,
+            size: file.size,
+            mimeType: file.type || 'application/octet-stream',
+            dataUrl: dataUrl,
+            downloadUrl: '',
+            createdAt: new Date().toISOString()
+          };
+          storeItems.push(fileObj);
+          saveStateLocally();
+          enqueueSyncItem('SET_STORE_ITEM', fileObj);
+        }
+      } catch (err) {
+        alert("Error uploading file(s): " + err.message);
+      } finally {
+        document.getElementById('storeFileUploadInput').value = '';
+        hideLoader();
+        renderMenuStore();
+      }
+    }
+
+    async function handleStoreFolderUpload(fileList) {
+      if (!fileList || fileList.length === 0) return;
+      const filesArr = Array.from(fileList);
+
+      showLoader(`Creating folder structure & uploading ${filesArr.length} file(s)...`);
+      try {
+        const pathCache = {};
+
+        for (const file of filesArr) {
+          if (file.size > 15 * 1024 * 1024) {
+            continue;
+          }
+
+          const relPath = file.webkitRelativePath || file.name;
+          const parts = relPath.split('/');
+          parts.pop();
+
+          let targetParentId = currentStoreFolderId;
+          let runningPath = '';
+
+          for (const segment of parts) {
+            runningPath = runningPath ? `${runningPath}/${segment}` : segment;
+            if (pathCache[runningPath]) {
+              targetParentId = pathCache[runningPath];
+            } else {
+              const folderRecord = createStoreFolderRecord(segment, targetParentId);
+              targetParentId = folderRecord.id;
+              pathCache[runningPath] = targetParentId;
+            }
+          }
+
+          const dataUrl = await readFileAsDataURL(file);
+          const fileObj = {
+            id: 'fil_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+            type: 'file',
+            name: file.name,
+            parentId: targetParentId,
+            size: file.size,
+            mimeType: file.type || 'application/octet-stream',
+            dataUrl: dataUrl,
+            downloadUrl: '',
+            createdAt: new Date().toISOString()
+          };
+          storeItems.push(fileObj);
+          saveStateLocally();
+          enqueueSyncItem('SET_STORE_ITEM', fileObj);
+        }
+      } catch (err) {
+        alert("Error uploading folder: " + err.message);
+      } finally {
+        document.getElementById('storeFolderUploadInput').value = '';
+        hideLoader();
+        renderMenuStore();
+      }
+    }
+
+    function handleStoreDragOver(e) {
+      e.preventDefault();
+      document.getElementById('storeDropZone').classList.add('dragover');
+    }
+
+    function handleStoreDragLeave(e) {
+      e.preventDefault();
+      document.getElementById('storeDropZone').classList.remove('dragover');
+    }
+
+    function handleStoreDrop(e) {
+      e.preventDefault();
+      document.getElementById('storeDropZone').classList.remove('dragover');
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleStoreFilesUpload(e.dataTransfer.files);
+      }
+    }
+
+    function viewStoreFile(itemId) {
+      const item = storeItems.find(i => i.id === itemId && i.type === 'file');
+      if (!item) return;
+      const urlToOpen = item.downloadUrl || item.dataUrl;
+      if (!urlToOpen) {
+        alert("File content not available offline yet. Please sync online first.");
+        return;
+      }
+      openDocumentViewer(urlToOpen, item.name, item.mimeType);
+    }
+
+    function downloadStoreFile(itemId) {
+      const item = storeItems.find(i => i.id === itemId && i.type === 'file');
+      if (!item) return;
+      const urlToOpen = item.downloadUrl || item.dataUrl;
+      if (!urlToOpen) {
+        alert("File content not available offline yet.");
+        return;
+      }
+      const a = document.createElement('a');
+      a.href = urlToOpen;
+      a.download = item.name;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    function renameStoreItem(itemId) {
+      const item = storeItems.find(i => i.id === itemId);
+      if (!item) return;
+      const newName = prompt(`Rename ${item.type}:`, item.name);
+      if (!newName || !newName.trim() || newName.trim() === item.name) return;
+
+      item.name = newName.trim();
+      saveStateLocally();
+      enqueueSyncItem('SET_STORE_ITEM', item);
+      renderMenuStore();
+    }
+
+    function moveStoreItem(itemId) {
+      const item = storeItems.find(i => i.id === itemId);
+      if (!item) return;
+
+      const excludedIds = new Set([item.id]);
+      if (item.type === 'folder') {
+        let added = true;
+        while (added) {
+          added = false;
+          storeItems.forEach(x => {
+            if (x.type === 'folder' && excludedIds.has(x.parentId) && !excludedIds.has(x.id)) {
+              excludedIds.add(x.id);
+              added = true;
+            }
+          });
+        }
+      }
+
+      const validFolders = storeItems.filter(x => x.type === 'folder' && !excludedIds.has(x.id));
+      let promptMsg = `Move "${item.name}" to which Location?\nEnter number:\n0 : / Root Store\n`;
+      validFolders.forEach((f, idx) => {
+        const pathStr = getStorePathChain(f.id).map(p => p.name).join(' / ');
+        promptMsg += `${idx + 1} : / ${pathStr}\n`;
+      });
+
+      const choice = prompt(promptMsg, "0");
+      if (choice === null) return;
+      const num = parseInt(choice.trim(), 10);
+      if (isNaN(num) || num < 0 || num > validFolders.length) {
+        alert("Invalid location number.");
+        return;
+      }
+
+      item.parentId = num === 0 ? 'root' : validFolders[num - 1].id;
+      saveStateLocally();
+      enqueueSyncItem('SET_STORE_ITEM', item);
+      renderMenuStore();
+    }
+
+    function deleteStoreItem(itemId) {
+      const item = storeItems.find(i => i.id === itemId);
+      if (!item) return;
+
+      const msg = item.type === 'folder'
+        ? `Delete folder "${item.name}" and ALL sub-folders/files inside it?`
+        : `Delete file "${item.name}"?`;
+
+      if (!confirm(msg)) return;
+
+      const idsToDelete = new Set([item.id]);
+      if (item.type === 'folder') {
+        let added = true;
+        while (added) {
+          added = false;
+          storeItems.forEach(x => {
+            if (idsToDelete.has(x.parentId) && !idsToDelete.has(x.id)) {
+              idsToDelete.add(x.id);
+              added = true;
+            }
+          });
+        }
+      }
+
+      const deletedObjects = storeItems.filter(x => idsToDelete.has(x.id));
+      storeItems = storeItems.filter(x => !idsToDelete.has(x.id));
+      saveStateLocally();
+
+      deletedObjects.forEach(delObj => {
+        enqueueSyncItem('DELETE_STORE_ITEM', { id: delObj.id, downloadUrl: delObj.downloadUrl || '' });
+      });
+
+      if (idsToDelete.has(currentStoreFolderId)) {
+        currentStoreFolderId = 'root';
+      }
+      renderMenuStore();
+    }
+
+    function renderStoreFolderTree(parentId, depth, container) {
+      const childFolders = storeItems
+        .filter(i => i.type === 'folder' && i.parentId === parentId)
+        .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+
+      childFolders.forEach(folder => {
+        const node = document.createElement('div');
+        node.className = 'tree-node' + (currentStoreFolderId === folder.id ? ' active' : '');
+        node.style.paddingLeft = `${0.5 + depth * 0.9}rem`;
+        node.innerHTML = `<span>📁</span> <span style="overflow:hidden; text-overflow:ellipsis;">${folder.name}</span>`;
+        node.title = folder.name;
+        node.onclick = () => navigateStoreFolder(folder.id);
+        container.appendChild(node);
+
+        renderStoreFolderTree(folder.id, depth + 1, container);
+      });
+    }
+
+    function renderMenuStore() {
+      const searchVal = (document.getElementById('storeSearchInput').value || '').toLowerCase().trim();
+      const breadcrumbsEl = document.getElementById('storeBreadcrumbs');
+      const pathChain = getStorePathChain(currentStoreFolderId);
+
+      let bcHtml = `<span class="breadcrumb-item ${currentStoreFolderId === 'root' && !searchVal ? 'active' : ''}" onclick="navigateStoreFolder('root')">🏠 Root Store</span>`;
+      pathChain.forEach((folder, idx) => {
+        const isLast = idx === pathChain.length - 1 && !searchVal;
+        bcHtml += `<span class="breadcrumb-sep">/</span><span class="breadcrumb-item ${isLast ? 'active' : ''}" onclick="navigateStoreFolder('${folder.id}')">📁 ${folder.name}</span>`;
+      });
+      if (searchVal) {
+        bcHtml += `<span class="breadcrumb-sep">/</span><span class="breadcrumb-item active">🔍 Search: "${searchVal}"</span>`;
+      }
+      breadcrumbsEl.innerHTML = bcHtml;
+
+      const fullPathText = pathChain.length > 0 ? '/ Root Store / ' + pathChain.map(f => f.name).join(' / ') : '/ Root Store';
+      document.getElementById('storeCurrentPathLabel').innerText = fullPathText;
+
+      const treeContainer = document.getElementById('storeFolderTree');
+      treeContainer.innerHTML = '';
+      const rootNode = document.createElement('div');
+      rootNode.className = 'tree-node' + (currentStoreFolderId === 'root' ? ' active' : '');
+      rootNode.innerHTML = `<span>🏠</span> <span>Root Store</span>`;
+      rootNode.onclick = () => navigateStoreFolder('root');
+      treeContainer.appendChild(rootNode);
+      renderStoreFolderTree('root', 1, treeContainer);
+
+      let visibleItems = [];
+      if (searchVal) {
+        visibleItems = storeItems.filter(i => i.name && i.name.toLowerCase().includes(searchVal));
+      } else {
+        visibleItems = storeItems.filter(i => i.parentId === currentStoreFolderId);
+      }
+
+      visibleItems.sort((a, b) => {
+        if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
+        return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+      });
+
+      const foldersCount = visibleItems.filter(i => i.type === 'folder').length;
+      const filesCount = visibleItems.filter(i => i.type === 'file').length;
+      document.getElementById('storeStatsLabel').innerText = `${foldersCount} Folder(s), ${filesCount} File(s)`;
+
+      const itemsContainer = document.getElementById('storeItemsContainer');
+      itemsContainer.innerHTML = '';
+
+      if (visibleItems.length === 0) {
+        itemsContainer.style.display = 'block';
+        itemsContainer.innerHTML = `
+          <div style="text-align:center; padding:2.5rem 1rem; color:#64748b;">
+            <div style="font-size:2.2rem; margin-bottom:0.4rem;">📂</div>
+            <strong>This location is empty</strong>
+            <p style="font-size:0.84rem; margin-top:0.3rem;">Click <b>"📁+ New Location / Folder"</b> to organize your directory, or upload files/folders above.</p>
+          </div>
+        `;
+        return;
+      }
+
+      itemsContainer.style.display = 'grid';
+      visibleItems.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'store-item-card';
+
+        if (item.type === 'folder') {
+          const childCount = storeItems.filter(x => x.parentId === item.id).length;
+          const locHint = searchVal ? `<br><span style="color:#0284c7;">in /${getStorePathChain(item.parentId).map(p => p.name).join('/')}</span>` : '';
+          card.innerHTML = `
+            <div>
+              <div class="store-item-icon" onclick="navigateStoreFolder('${item.id}')">📁</div>
+              <div class="store-item-name" onclick="navigateStoreFolder('${item.id}')">${item.name}</div>
+              <div class="store-item-meta">${childCount} item(s)${locHint}</div>
+            </div>
+            <div class="store-item-actions">
+              <button type="button" class="btn-action btn-history" onclick="navigateStoreFolder('${item.id}')" title="Open Folder">📂 Open</button>
+              <button type="button" class="btn-action btn-edit" onclick="renameStoreItem('${item.id}')" title="Rename">✎</button>
+              <button type="button" class="btn-action btn-secondary" onclick="moveStoreItem('${item.id}')" title="Move Location">⇄</button>
+              <button type="button" class="btn-action btn-delete" onclick="deleteStoreItem('${item.id}')" title="Delete">🗑️</button>
+            </div>
+          `;
+        } else {
+          const icon = getFileIcon(item.name, item.mimeType);
+          const syncTag = item.downloadUrl ? '☁️ Cloud' : '💾 Local';
+          const locHint = searchVal ? `<br><span style="color:#0284c7;">in /${getStorePathChain(item.parentId).map(p => p.name).join('/')}</span>` : '';
+          card.innerHTML = `
+            <div>
+              <div class="store-item-icon" onclick="viewStoreFile('${item.id}')">${icon}</div>
+              <div class="store-item-name" onclick="viewStoreFile('${item.id}')">${item.name}</div>
+              <div class="store-item-meta">${formatFileSize(item.size)} • ${syncTag}${locHint}</div>
+            </div>
+            <div class="store-item-actions">
+              <button type="button" class="btn-action btn-print" onclick="viewStoreFile('${item.id}')" title="View File">👁️ View</button>
+              <button type="button" class="btn-action btn-excel" onclick="downloadStoreFile('${item.id}')" title="Download">📥</button>
+              <button type="button" class="btn-action btn-edit" onclick="renameStoreItem('${item.id}')" title="Rename">✎</button>
+              <button type="button" class="btn-action btn-secondary" onclick="moveStoreItem('${item.id}')" title="Move Location">⇄</button>
+              <button type="button" class="btn-action btn-delete" onclick="deleteStoreItem('${item.id}')" title="Delete">🗑️</button>
+            </div>
+          `;
+        }
+
+        itemsContainer.appendChild(card);
+      });
     }
 
     window.onload = function() {
