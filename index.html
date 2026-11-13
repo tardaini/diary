@@ -170,7 +170,7 @@
       display: none;
     }
 
-    /* Folder (Cloud & Offline File/Folder Manager) Styles */
+    /* Menu Store (Cloud & Offline File/Folder Manager) Styles */
     .btn-menustore { background-color: #0f766e; border: 1px solid #14b8a6; width: auto; margin: 0; }
     .btn-menustore:hover { background-color: #115e59; }
 
@@ -1061,7 +1061,7 @@
     <div class="header-btns">
       <div class="filter-bar" id="filterBarContainer" style="display: none;"></div>
 
-      <button class="btn-menustore" onclick="openMenuStoreModal()">🗄️ Folder</button>
+      <button class="btn-menustore" onclick="openMenuStoreModal()">🗄️ Menu Store</button>
       <button class="btn-caselist" onclick="openCaseListModal()">📜 Print Case List</button>
       <button class="btn-forward" onclick="openForwardCaseModal()">⏩ Forward Case</button>
       <button class="btn-logbook" onclick="openBulkLogModal()">📖 Update Log Book</button>
@@ -1234,11 +1234,11 @@
 
   </div>
 
-  <!-- Folder (CLOUD FILE & FOLDER MANAGER) WINDOW -->
+  <!-- MENU STORE (CLOUD FILE & FOLDER MANAGER) WINDOW -->
   <div id="menuStoreModal" class="modal">
     <div class="modal-content window-modal-content" id="menuStoreWindowContent" style="max-width: 1050px;">
       <div class="window-titlebar" onmousedown="startDrag(event, 'menuStoreWindowContent')">
-        <div class="window-title">🗄️ Folder — Universal Cloud & Offline File/Folder Repository</div>
+        <div class="window-title">🗄️ Menu Store — Universal Cloud & Offline File/Folder Repository</div>
         <div class="window-controls">
           <button type="button" class="window-btn" onclick="toggleWindowMinimize('menuStoreWindowContent')" title="Minimize">_</button>
           <button type="button" class="window-btn" onclick="toggleWindowMaximize('menuStoreWindowContent')" title="Maximize / Restore">□</button>
@@ -1287,7 +1287,7 @@
 
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.9rem; flex-wrap:wrap; gap:0.5rem;">
           <span style="font-size:0.78rem; color:#64748b;">☁️ Synced with Firebase Cloud & Local Storage — accessible from any device upon login.</span>
-          <button type="button" class="btn-secondary" style="margin:0;" onclick="closeMenuStoreModal()">Close Folder</button>
+          <button type="button" class="btn-secondary" style="margin:0;" onclick="closeMenuStoreModal()">Close Menu Store</button>
         </div>
       </div>
     </div>
@@ -3907,7 +3907,7 @@
       }
     }
 
-    /* --- Folder (UNIVERSAL FILE & FOLDER REPOSITORY) --- */
+    /* --- MENU STORE (UNIVERSAL FILE & FOLDER REPOSITORY) --- */
     function openMenuStoreModal() {
       if (!currentStoreFolderId || (currentStoreFolderId !== 'root' && !storeItems.some(i => i.id === currentStoreFolderId && i.type === 'folder'))) {
         currentStoreFolderId = 'root';
@@ -4000,7 +4000,7 @@
       if (!fileList || fileList.length === 0) return;
       const filesArr = Array.from(fileList);
 
-      showLoader(`Uploading ${filesArr.length} file(s) to Folder...`);
+      showLoader(`Uploading ${filesArr.length} file(s) to Menu Store...`);
       try {
         for (const file of filesArr) {
           if (file.size > 15 * 1024 * 1024) {
