@@ -9,6 +9,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js"></script>
 
   <style>
     :root {
@@ -846,6 +847,33 @@
       width: auto;
       margin: 0;
     }
+
+    .btn-msg { background-color: #059669; width: auto; margin: 0; }
+    .btn-whatsapp { background-color: #16a34a; color: white; }
+    .btn-fcm { background-color: #2563eb; color: white; }
+    .msg-card {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 0.9rem;
+      margin-bottom: 0.8rem;
+    }
+    .msg-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.72rem;
+      font-weight: bold;
+      background: #dcfce7;
+      color: #166534;
+    }
+    .msg-template-box {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 0.8rem;
+      margin-bottom: 1rem;
+    }
   </style>
 </head>
 <body>
@@ -890,6 +918,7 @@
     <div class="header-btns">
       <div class="filter-bar" id="filterBarContainer" style="display: none;"></div>
 
+      <button class="btn-msg" onclick="openBulkMessageModal()">📨 Send Hearing / Bulk Messages</button>
       <button class="btn-caselist" onclick="openCaseListModal()">📜 Print Case List</button>
       <button class="btn-forward" onclick="openForwardCaseModal()">⏩ Forward Case</button>
       <button class="btn-logbook" onclick="openBulkLogModal()">📖 Update Log Book</button>
@@ -904,6 +933,7 @@
     <button class="nav-tab-btn" onclick="switchTab('registerCaseTab', this)">📝 Register New Case</button>
     <button class="nav-tab-btn active" onclick="switchTab('calendarTab', this)">📅 Calendar</button>
     <button class="nav-tab-btn" onclick="switchTab('feeSearchTab', this)">💰 Search Fees Between Dates</button>
+    <button class="nav-tab-btn" onclick="switchTab('messagingTab', this)">📨 Hearing & Bulk Messaging</button>
   </div>
 
   <!-- Court/Forum Summary Bar -->
@@ -1060,6 +1090,146 @@
       <div id="courtAccordionContainer" style="margin-top: 0.5rem;"></div>
     </div>
 
+
+    <!-- 5. Hearing & Bulk Messaging Center Tab Pane -->
+    <div class="card tab-pane" id="messagingTabPane" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; margin-bottom: 1rem;">
+        <h2 style="border:none; margin:0; padding:0;">📨 Hearing Date & Bulk Messaging Center (FCM Push + Client SMS/WhatsApp)</h2>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          <span id="fcmStatusBadge" class="msg-badge" style="background:#fef3c7; color:#92400e;">🔔 FCM: Initializing...</span>
+          <button type="button" class="btn-action btn-fcm" onclick="requestFcmPermissionAndToken()">🔔 Enable Push & Get Token</button>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+        <div class="msg-template-box">
+          <h3 style="margin-top:0; font-size:0.95rem; color:var(--primary);">1. Filter Recipients by Hearing Date / Court / Status</h3>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.6rem;">
+            <div>
+              <label for="msgTabDate" style="margin-top:0;">Hearing Date (Leave blank for All):</label>
+              <input type="date" id="msgTabDate" onchange="renderMessagingRecipients()">
+            </div>
+            <div>
+              <label for="msgTabCourt" style="margin-top:0;">Court / Forum Filter:</label>
+              <select id="msgTabCourt" onchange="renderMessagingRecipients()">
+                <option value="ALL">-- All Courts --</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.6rem; margin-top:0.5rem;">
+            <div>
+              <label for="msgTabStatus" style="margin-top:0;">Case Status Filter:</label>
+              <select id="msgTabStatus" onchange="renderMessagingRecipients()">
+                <option value="ALL">-- All Statuses --</option>
+              </select>
+            </div>
+            <div>
+              <label for="msgTabSearch" style="margin-top:0;">Search Client / Case:</label>
+              <input type="text" id="msgTabSearch" placeholder="Name, Phone, Case No..." onkeyup="renderMessagingRecipients()">
+            </div>
+          </div>
+          <div style="margin-top:0.6rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+            <button type="button" class="btn-sm-ctrl" style="background:#0f766e;" onclick="setMsgDateToday()">📅 Today's Hearings</button>
+            <button type="button" class="btn-sm-ctrl" style="background:#0284c7;" onclick="setMsgDateTomorrow()">⏭️ Tomorrow's Hearings</button>
+            <button type="button" class="btn-sm-ctrl" style="background:#64748b;" onclick="clearMsgDateFilter()">🌐 All Cases (Bulk)</button>
+          </div>
+        </div>
+
+        <div class="msg-template-box">
+          <h3 style="margin-top:0; font-size:0.95rem; color:var(--primary);">2. Compose Hearing / Bulk Message Template</h3>
+          <label for="msgTemplatePreset" style="margin-top:0;">Quick Template Preset:</label>
+          <select id="msgTemplatePreset" onchange="applyMsgTemplatePreset(this.value)">
+            <option value="HEARING_REMINDER">📅 Hearing Date Reminder (Hindi/English)</option>
+            <option value="NEXT_DATE_UPDATE">🔄 Next Hearing Date Update</option>
+            <option value="DOCUMENT_REQUIRED">📄 Urgent Document / Presence Required</option>
+            <option value="GENERAL_NOTICE">📢 General Office Notice (Bulk)</option>
+          </select>
+          <label for="msgTemplateBody">Message Content (Placeholders: <code>{client}</code>, <code>{caseNo}</code>, <code>{parties}</code>, <code>{court}</code>, <code>{date}</code>, <code>{stage}</code>):</label>
+          <textarea id="msgTemplateBody" rows="3" oninput="renderMessagingRecipients()">नमस्ते {client}, आपके मुकदमे संख्या {caseNo} ({parties}) की आगामी सुनवाई तिथि {date} को न्यायालय {court} में निर्धारित है। चरण: {stage}। कृपया समय पर उपस्थित रहें। - एडवोकेट पं. सुधांशु कुमार तिवारी</textarea>
+        </div>
+      </div>
+
+      <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:0.75rem; margin-bottom:1rem; font-size:0.82rem; color:#1e3a8a;">
+        <strong>🔑 Configured Firebase Cloud Messaging (FCM) & Service Account Credentials:</strong><br>
+        Project ID: <code>contact-d0800</code> | Service Account: <code>firebase-adminsdk-fbsvc@contact-d0800.iam.gserviceaccount.com</code> | Key ID: <code>a2818c80e50a5eb577cd345364c23bb49c54abea</code><br>
+        Web Push VAPID Key Pair: <code style="word-break:break-all;">BNBRkJoDCnsT8Cnw1lBqXZpvja9rcW6KexjlEc72oq6nwgqNG1KcBuyY7PFUG6xQsXkYDhBtgAWr0yO5JhcP_Os</code>
+        <div id="fcmDeviceTokenDisplay" style="margin-top:0.3rem; color:#0f766e; font-weight:600;"></div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem; flex-wrap:wrap; gap:0.5rem;">
+        <div>
+          <label style="display:inline; cursor:pointer; font-weight:bold;">
+            <input type="checkbox" id="selectAllMsgRecipients" checked onchange="toggleAllMsgRecipients(this)" style="width:auto; margin-right:6px;">
+            Select All Filtered Recipients (<span id="msgSelectedCount">0</span>)
+          </label>
+        </div>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <button type="button" class="btn-action btn-fcm" style="padding:0.45rem 0.9rem;" onclick="dispatchBulkFcmAndQueue()">🚀 Send Bulk Push Notification & Queue Dispatch</button>
+          <button type="button" class="btn-action btn-whatsapp" style="padding:0.45rem 0.9rem;" onclick="exportBulkMessageSheet()">📋 Copy All Personalized Messages</button>
+        </div>
+      </div>
+
+      <div id="messagingRecipientsContainer" style="max-height: 450px; overflow-y: auto;"></div>
+    </div>
+
+  </div>
+
+
+  <!-- BULK & HEARING DATE MESSAGE MODAL WINDOW -->
+  <div id="bulkMessageModal" class="modal">
+    <div class="modal-content window-modal-content" id="bulkMessageWindowContent" style="max-width: 920px;">
+      <div class="window-titlebar" onmousedown="startDrag(event, 'bulkMessageWindowContent')">
+        <div class="window-title">📨 Send Hearing Date & Bulk Messages</div>
+        <div class="window-controls">
+          <button type="button" class="window-btn" onclick="toggleWindowMinimize('bulkMessageWindowContent')" title="Minimize">_</button>
+          <button type="button" class="window-btn" onclick="toggleWindowMaximize('bulkMessageWindowContent')" title="Maximize / Restore">□</button>
+          <button type="button" class="window-btn btn-close-win" onclick="closeBulkMessageModal()" title="Close Window">✕</button>
+        </div>
+      </div>
+      <div class="window-body">
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:0.8rem; background:#f1f5f9; padding:0.8rem; border-radius:6px; margin-bottom:0.8rem;">
+          <div>
+            <label style="margin-top:0;" for="modalMsgDate">Hearing Date (Blank = All):</label>
+            <input type="date" id="modalMsgDate" onchange="loadBulkMessageModalList()">
+          </div>
+          <div>
+            <label style="margin-top:0;" for="modalMsgCourt">Court Filter:</label>
+            <select id="modalMsgCourt" onchange="loadBulkMessageModalList()">
+              <option value="ALL">-- All Courts --</option>
+            </select>
+          </div>
+          <div>
+            <label style="margin-top:0;" for="modalMsgPreset">Message Template:</label>
+            <select id="modalMsgPreset" onchange="applyModalMsgPreset(this.value)">
+              <option value="HEARING_REMINDER">📅 Hearing Date Reminder</option>
+              <option value="NEXT_DATE_UPDATE">🔄 Next Date Update</option>
+              <option value="DOCUMENT_REQUIRED">📄 Document / Presence Notice</option>
+              <option value="GENERAL_NOTICE">📢 Bulk General Notice</option>
+            </select>
+          </div>
+        </div>
+
+        <label for="modalMsgText" style="margin-top:0;">Message Text (<code>{client}</code>, <code>{caseNo}</code>, <code>{parties}</code>, <code>{court}</code>, <code>{date}</code>, <code>{stage}</code>):</label>
+        <textarea id="modalMsgText" rows="2" style="margin-bottom:0.8rem;" oninput="loadBulkMessageModalList()">नमस्ते {client}, आपके मुकदमे संख्या {caseNo} ({parties}) की सुनवाई तिथि {date} को न्यायालय {court} में नियत है। चरण: {stage}। - एडवोकेट पं. सुधांशु कुमार तिवारी</textarea>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+          <label style="display:inline; cursor:pointer; font-weight:bold;">
+            <input type="checkbox" id="modalSelectAllMsg" checked onchange="toggleModalSelectAllMsg(this)" style="width:auto; margin-right:6px;">
+            Select All Cases (<span id="modalMsgCount">0</span>)
+          </label>
+          <div style="display:flex; gap:0.5rem;">
+            <button type="button" class="btn-action btn-fcm" onclick="sendBulkPushFromModal()">🚀 Send FCM Push & Log</button>
+            <button type="button" class="btn-action btn-whatsapp" onclick="copyAllModalMessages()">📋 Copy All Messages</button>
+          </div>
+        </div>
+
+        <div id="modalMsgListContainer" style="max-height: 320px; overflow-y: auto;"></div>
+
+        <div style="display:flex; gap:0.5rem; margin-top:1rem;">
+          <button type="button" class="btn-secondary" style="margin-top:0; width:100%;" onclick="closeBulkMessageModal()">Close Window</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- PARTIES-ONLY CASE LIST WINDOW -->
@@ -1965,12 +2135,14 @@
       const registerPane = document.getElementById('registerCaseTabPane');
       const feeSearchPane = document.getElementById('feeSearchTabPane');
       const activeCasesPane = document.getElementById('activeCasesTabPane');
+      const messagingPane = document.getElementById('messagingTabPane');
       const filterBarContainer = document.getElementById('filterBarContainer');
 
       calendarPane.style.display = 'none';
       registerPane.style.display = 'none';
       feeSearchPane.style.display = 'none';
       activeCasesPane.style.display = 'none';
+      if (messagingPane) messagingPane.style.display = 'none';
       if (filterBarContainer) filterBarContainer.style.display = 'none';
 
       if (tabId === 'calendarTab') {
@@ -1980,6 +2152,9 @@
         registerPane.style.display = 'block';
       } else if (tabId === 'feeSearchTab') {
         feeSearchPane.style.display = 'block';
+      } else if (tabId === 'messagingTab') {
+        if (messagingPane) messagingPane.style.display = 'block';
+        initMessagingTab();
       } else if (tabId === 'activeCasesTab') {
         activeCasesPane.style.display = 'block';
         if (filterBarContainer) filterBarContainer.style.display = 'flex';
@@ -2807,7 +2982,8 @@
             <td><span class="status-tag">${c.status || 'Ongoing'}</span></td>
             <td>
               <div class="actions">
-                <button type="button" class="btn-action btn-invoice" onclick="printCaseInvoice('${c.id}')">🖨️ Invoice</button>
+                <button type="button" class="btn-action btn-msg" onclick="sendSingleCaseQuickMessage('${c.id}')">📨 Message</button>
+                  <button type="button" class="btn-action btn-invoice" onclick="printCaseInvoice('${c.id}')">🖨️ Invoice</button>
                 <button type="button" class="btn-action btn-history" onclick="openHistoryModal('${c.id}')">📖 History</button>
                 ${docsHtml}
               </div>
@@ -2940,6 +3116,7 @@
               <td><span class="status-tag">${c.status || 'Ongoing'}</span><br>${docsHtml}</td>
               <td>
                 <div class="actions">
+                  <button type="button" class="btn-action btn-msg" onclick="sendSingleCaseQuickMessage('${c.id}')">📨 Message</button>
                   <button type="button" class="btn-action btn-invoice" onclick="printCaseInvoice('${c.id}')">🖨️ Invoice</button>
                   <button type="button" class="btn-action btn-history" onclick="openHistoryModal('${c.id}')">📖 History</button>
                   <button type="button" class="btn-action btn-edit" onclick="editCase('${c.id}')">✎ Edit</button>
@@ -3609,6 +3786,488 @@
       } else {
         alertBox.style.display = 'none';
       }
+    }
+
+
+    /* --- FIREBASE CLOUD MESSAGING (VAPID + SERVICE ACCOUNT CONFIG) & BULK MESSAGING ENGINE --- */
+    const FCM_VAPID_PUBLIC_KEY = "BNBRkJoDCnsT8Cnw1lBqXZpvja9rcW6KexjlEc72oq6nwgqNG1KcBuyY7PFUG6xQsXkYDhBtgAWr0yO5JhcP_Os";
+    const FIREBASE_SERVICE_ACCOUNT_META = {
+      type: "service_account",
+      project_id: "contact-d0800",
+      private_key_id: "a2818c80e50a5eb577cd345364c23bb49c54abea",
+      client_email: "firebase-adminsdk-fbsvc@contact-d0800.iam.gserviceaccount.com",
+      client_id: "102316780414812992341",
+      auth_uri: "https://accounts.google.com/o/oauth2/auth",
+      token_uri: "https://oauth2.googleapis.com/token",
+      auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
+      client_x509_cert_url: "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40contact-d0800.iam.gserviceaccount.com",
+      universe_domain: "googleapis.com"
+    };
+
+    let messaging = null;
+    let currentFcmToken = localStorage.getItem('adv_diary_fcm_token') || '';
+
+    try {
+      if (firebase.messaging && firebase.messaging.isSupported()) {
+        messaging = firebase.messaging();
+        messaging.onMessage((payload) => {
+          console.log('Foreground FCM Message received:', payload);
+          const title = (payload.notification && payload.notification.title) || 'Case Diary Notification';
+          const body = (payload.notification && payload.notification.body) || '';
+          showCopyToast(`🔔 ${title}: ${body}`);
+        });
+      }
+    } catch (e) {
+      console.warn('FCM initialization note:', e);
+    }
+
+    async function requestFcmPermissionAndToken() {
+      const badge = document.getElementById('fcmStatusBadge');
+      const tokenDisplay = document.getElementById('fcmDeviceTokenDisplay');
+
+      if (!('Notification' in window)) {
+        alert('This browser does not support desktop push notifications.');
+        return;
+      }
+
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          if (badge) {
+            badge.style.background = '#fee2e2';
+            badge.style.color = '#991b1b';
+            badge.innerText = '🔕 FCM: Permission Denied';
+          }
+          alert('Notification permission was denied. Please enable notifications in browser settings.');
+          return;
+        }
+
+        if (messaging) {
+          let swReg = null;
+          if ('serviceWorker' in navigator) {
+            try {
+              const swCode = `
+                importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
+                importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js');
+                firebase.initializeApp(${JSON.stringify(firebaseConfig)});
+                const messaging = firebase.messaging();
+                messaging.onBackgroundMessage((payload) => {
+                  const title = (payload.notification && payload.notification.title) || 'Hearing Reminder';
+                  const options = {
+                    body: (payload.notification && payload.notification.body) || '',
+                    icon: '/favicon.ico'
+                  };
+                  self.registration.showNotification(title, options);
+                });
+              `;
+              const blob = new Blob([swCode], { type: 'application/javascript' });
+              const swUrl = URL.createObjectURL(blob);
+              swReg = await navigator.serviceWorker.register(swUrl);
+            } catch (swErr) {
+              console.warn('Inline SW registration fallback:', swErr);
+            }
+          }
+
+          const tokenOptions = { vapidKey: FCM_VAPID_PUBLIC_KEY };
+          if (swReg) tokenOptions.serviceWorkerRegistration = swReg;
+
+          const token = await messaging.getToken(tokenOptions);
+          if (token) {
+            currentFcmToken = token;
+            localStorage.setItem('adv_diary_fcm_token', token);
+            if (badge) {
+              badge.style.background = '#dcfce7';
+              badge.style.color = '#166534';
+              badge.innerText = '🔔 FCM: Connected & Active';
+            }
+            if (tokenDisplay) {
+              tokenDisplay.innerText = `✅ Active Device FCM Token: ${token.substring(0, 28)}...`;
+            }
+            if (navigator.onLine && auth.currentUser) {
+              await db.collection('fcm_tokens').doc(auth.currentUser.uid).set({
+                token: token,
+                vapidKey: FCM_VAPID_PUBLIC_KEY,
+                serviceAccountEmail: FIREBASE_SERVICE_ACCOUNT_META.client_email,
+                updatedAt: new Date().toISOString()
+              }, { merge: true });
+            }
+            showCopyToast('✅ FCM Push Token generated & registered!');
+          }
+        }
+      } catch (err) {
+        console.error('FCM Token Error:', err);
+        if (badge) {
+          badge.style.background = '#fef3c7';
+          badge.style.color = '#92400e';
+          badge.innerText = '🔔 FCM: Ready (HTTPS/Localhost required for SW)';
+        }
+        if (tokenDisplay) {
+          tokenDisplay.innerText = `ℹ️ VAPID Key Pair bound (${FCM_VAPID_PUBLIC_KEY.substring(0, 20)}...). Note: Browser Push Service Worker requires HTTPS or localhost; SMS/WhatsApp & Firestore Queue work offline/file://.`;
+        }
+      }
+    }
+
+    const MESSAGE_TEMPLATES = {
+      HEARING_REMINDER: "नमस्ते {client}, आपके मुकदमे संख्या {caseNo} ({parties}) की आगामी सुनवाई तिथि {date} को न्यायालय {court} में निर्धारित है। चरण: {stage}। कृपया समय पर उपस्थित रहें। - एडवोकेट पं. सुधांशु कुमार तिवारी",
+      NEXT_DATE_UPDATE: "सूचना: मुकदमा संख्या {caseNo} ({parties}) में अगली सुनवाई तिथि {date} (न्यायालय: {court}, चरण: {stage}) नियत की गई है। - एडवोकेट पं. सुधांशु कुमार तिवारी",
+      DOCUMENT_REQUIRED: "आवश्यक सूचना {client}: आपके मुकदमे {caseNo} ({parties}) की तिथि {date} ({court}) हेतु आवश्यक कागजात/हस्ताक्षर के लिए कृपया कार्यालय में संपर्क करें। - एडवोकेट पं. सुधांशु कुमार तिवारी",
+      GENERAL_NOTICE: "नमस्ते {client}, कार्यालय एडवोकेट पं. सुधांशु कुमार तिवारी की ओर से सूचित किया जाता है कि आपके वाद {caseNo} की स्थिति वर्तमान में '{stage}' है। किसी भी जानकारी हेतु संपर्क करें।"
+    };
+
+    function formatCaseMessage(template, c) {
+      return template
+        .replace(/\{client\}/g, (c.clientName && c.clientName !== 'NA') ? c.clientName : 'पक्षकार')
+        .replace(/\{caseNo\}/g, c.caseNo || 'NA')
+        .replace(/\{parties\}/g, c.parties || '')
+        .replace(/\{court\}/g, c.court || '')
+        .replace(/\{date\}/g, c.nextDate || 'निर्धारित तिथि')
+        .replace(/\{stage\}/g, c.stage || 'सुनवाई');
+    }
+
+    function cleanPhoneNumber(phone) {
+      if (!phone || phone === 'NA') return '';
+      const digits = String(phone).replace(/\D/g, '');
+      if (digits.length === 10) return '91' + digits;
+      return digits;
+    }
+
+    function sendWhatsAppMessage(phone, messageText) {
+      const cleanPhone = cleanPhoneNumber(phone);
+      const encoded = encodeURIComponent(messageText);
+      const url = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encoded}` : `https://wa.me/?text=${encoded}`;
+      window.open(url, '_blank');
+    }
+
+    function sendSmsMessage(phone, messageText) {
+      const cleanPhone = String(phone || '').replace(/[^\d+]/g, '');
+      const encoded = encodeURIComponent(messageText);
+      window.open(`sms:${cleanPhone}?body=${encoded}`, '_self');
+    }
+
+    function sendSingleCaseQuickMessage(caseId) {
+      const targetCase = cases.find(c => c.id === caseId);
+      if (!targetCase) return;
+      openBulkMessageModal();
+      document.getElementById('modalMsgDate').value = targetCase.nextDate || '';
+      loadBulkMessageModalList(caseId);
+    }
+
+    /* --- MESSAGING TAB FUNCTIONS --- */
+    function initMessagingTab() {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const dateInput = document.getElementById('msgTabDate');
+      if (dateInput && !dateInput.value) dateInput.value = todayStr;
+
+      const courtSelect = document.getElementById('msgTabCourt');
+      if (courtSelect) {
+        courtSelect.innerHTML = '<option value="ALL">-- All Courts --</option>';
+        courtOptions.forEach(c => courtSelect.innerHTML += `<option value="${c}">${c}</option>`);
+      }
+
+      const statusSelect = document.getElementById('msgTabStatus');
+      if (statusSelect) {
+        statusSelect.innerHTML = '<option value="ALL">-- All Statuses --</option>';
+        statusOptions.forEach(s => statusSelect.innerHTML += `<option value="${s}">${s}</option>`);
+      }
+
+      if (currentFcmToken) {
+        const badge = document.getElementById('fcmStatusBadge');
+        if (badge) {
+          badge.style.background = '#dcfce7';
+          badge.style.color = '#166534';
+          badge.innerText = '🔔 FCM: Token Saved';
+        }
+      }
+      renderMessagingRecipients();
+    }
+
+    function setMsgDateToday() {
+      document.getElementById('msgTabDate').value = new Date().toISOString().split('T')[0];
+      renderMessagingRecipients();
+    }
+
+    function setMsgDateTomorrow() {
+      const tmr = new Date();
+      tmr.setDate(tmr.getDate() + 1);
+      document.getElementById('msgTabDate').value = tmr.toISOString().split('T')[0];
+      renderMessagingRecipients();
+    }
+
+    function clearMsgDateFilter() {
+      document.getElementById('msgTabDate').value = '';
+      renderMessagingRecipients();
+    }
+
+    function applyMsgTemplatePreset(presetKey) {
+      if (MESSAGE_TEMPLATES[presetKey]) {
+        document.getElementById('msgTemplateBody').value = MESSAGE_TEMPLATES[presetKey];
+        renderMessagingRecipients();
+      }
+    }
+
+    function getFilteredMessagingCases() {
+      const dateVal = document.getElementById('msgTabDate').value;
+      const courtVal = document.getElementById('msgTabCourt').value;
+      const statusVal = document.getElementById('msgTabStatus').value;
+      const searchVal = document.getElementById('msgTabSearch').value.toLowerCase().trim();
+
+      return cases.filter(c => {
+        if (dateVal && c.nextDate !== dateVal) return false;
+        if (courtVal !== 'ALL' && c.court !== courtVal) return false;
+        if (statusVal !== 'ALL' && c.status !== statusVal) return false;
+        if (searchVal) {
+          const hay = `${c.caseNo} ${c.parties} ${c.clientName} ${c.clientPhone} ${c.court}`.toLowerCase();
+          if (!hay.includes(searchVal)) return false;
+        }
+        return true;
+      });
+    }
+
+    function renderMessagingRecipients() {
+      const container = document.getElementById('messagingRecipientsContainer');
+      if (!container) return;
+      const filtered = getFilteredMessagingCases();
+      const template = document.getElementById('msgTemplateBody').value;
+
+      document.getElementById('msgSelectedCount').innerText = filtered.length;
+      if (filtered.length === 0) {
+        container.innerHTML = '<p style="color:#64748b; text-align:center; padding:1.5rem;">No cases match the selected hearing date / filter.</p>';
+        return;
+      }
+
+      let html = '';
+      filtered.forEach((c, idx) => {
+        const personalizedMsg = formatCaseMessage(template, c);
+        const safeEncodedMsg = encodeURIComponent(personalizedMsg);
+        const phoneDisplay = (c.clientPhone && c.clientPhone !== 'NA') ? c.clientPhone : 'No Phone';
+        html += `
+          <div class="msg-card" data-case-id="${c.id}">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.4rem;">
+              <label style="display:inline; cursor:pointer; font-weight:bold; color:var(--primary); margin:0;">
+                <input type="checkbox" class="msg-recipient-cb" value="${c.id}" checked onchange="updateMsgSelectedCounter()" style="width:auto; margin-right:6px;">
+                #${idx + 1} | ${c.clientName || 'N/A'} (📞 ${phoneDisplay}) — Case: <span style="color:#0284c7;">${c.caseNo}</span>
+              </label>
+              <span style="font-size:0.78rem; color:#475569;">🏛️ ${c.court} | 📅 ${c.nextDate || 'N/A'}</span>
+            </div>
+            <div style="font-size:0.84rem; background:#ffffff; border:1px solid #e2e8f0; padding:0.5rem; border-radius:4px; color:#1e293b; margin-bottom:0.5rem;">
+              ${personalizedMsg}
+            </div>
+            <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+              <button type="button" class="btn-action btn-whatsapp" onclick="sendWhatsAppMessage('${c.clientPhone || ''}', decodeURIComponent('${safeEncodedMsg}'))">💬 Send WhatsApp</button>
+              <button type="button" class="btn-action btn-print" onclick="sendSmsMessage('${c.clientPhone || ''}', decodeURIComponent('${safeEncodedMsg}'))">📱 Send SMS</button>
+              <button type="button" class="btn-action btn-fcm" onclick="queueSingleFcmNotification('${c.id}', decodeURIComponent('${safeEncodedMsg}'))">🔔 Queue FCM Push</button>
+              <button type="button" class="btn-action btn-secondary" onclick="copyTextDirect(decodeURIComponent('${safeEncodedMsg}'))">📋 Copy Text</button>
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    function toggleAllMsgRecipients(masterCb) {
+      document.querySelectorAll('.msg-recipient-cb').forEach(cb => cb.checked = masterCb.checked);
+      updateMsgSelectedCounter();
+    }
+
+    function updateMsgSelectedCounter() {
+      const count = document.querySelectorAll('.msg-recipient-cb:checked').length;
+      document.getElementById('msgSelectedCount').innerText = count;
+    }
+
+    function copyTextDirect(txt) {
+      navigator.clipboard.writeText(txt).then(() => showCopyToast('📋 Message copied to clipboard!'));
+    }
+
+    function exportBulkMessageSheet() {
+      const checked = Array.from(document.querySelectorAll('.msg-recipient-cb:checked'));
+      if (checked.length === 0) {
+        alert('Please select at least one recipient.');
+        return;
+      }
+      const template = document.getElementById('msgTemplateBody').value;
+      const lines = checked.map((cb, i) => {
+        const c = cases.find(x => x.id === cb.value);
+        if (!c) return '';
+        return `${i + 1}. ${c.clientName || 'Client'} (${c.clientPhone || 'No Phone'}):\n${formatCaseMessage(template, c)}`;
+      }).filter(Boolean);
+
+      navigator.clipboard.writeText(lines.join('\n\n-------------------\n\n')).then(() => {
+        showCopyToast(`📋 Copied ${lines.length} personalized messages to clipboard!`);
+      });
+    }
+
+    async function queueSingleFcmNotification(caseId, messageText) {
+      const c = cases.find(x => x.id === caseId);
+      if (!c) return;
+      const payload = {
+        id: 'msg_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+        caseId: c.id,
+        caseNo: c.caseNo,
+        clientName: c.clientName,
+        clientPhone: c.clientPhone,
+        hearingDate: c.nextDate,
+        court: c.court,
+        message: messageText,
+        vapidKey: FCM_VAPID_PUBLIC_KEY,
+        projectId: FIREBASE_SERVICE_ACCOUNT_META.project_id,
+        serviceAccountEmail: FIREBASE_SERVICE_ACCOUNT_META.client_email,
+        deviceToken: currentFcmToken || null,
+        status: 'QUEUED',
+        createdAt: new Date().toISOString()
+      };
+
+      if (navigator.onLine && auth.currentUser) {
+        await db.collection('notification_queue').doc(payload.id).set(payload);
+      }
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(`Hearing Reminder: ${c.caseNo}`, { body: messageText });
+      }
+      showCopyToast(`🚀 FCM Push queued for ${c.clientName || c.caseNo}!`);
+    }
+
+    async function dispatchBulkFcmAndQueue() {
+      const checked = Array.from(document.querySelectorAll('.msg-recipient-cb:checked'));
+      if (checked.length === 0) {
+        alert('Please select at least one case/client.');
+        return;
+      }
+      const template = document.getElementById('msgTemplateBody').value;
+      showLoader(`Queueing ${checked.length} FCM Push Notifications...`);
+
+      try {
+        let sentCount = 0;
+        for (const cb of checked) {
+          const c = cases.find(x => x.id === cb.value);
+          if (!c) continue;
+          const msg = formatCaseMessage(template, c);
+          const docId = 'bulk_' + Date.now() + '_' + sentCount;
+          if (navigator.onLine && auth.currentUser) {
+            await db.collection('notification_queue').doc(docId).set({
+              id: docId,
+              caseId: c.id,
+              caseNo: c.caseNo,
+              clientName: c.clientName,
+              clientPhone: c.clientPhone,
+              hearingDate: c.nextDate,
+              court: c.court,
+              message: msg,
+              vapidKey: FCM_VAPID_PUBLIC_KEY,
+              projectId: FIREBASE_SERVICE_ACCOUNT_META.project_id,
+              serviceAccountEmail: FIREBASE_SERVICE_ACCOUNT_META.client_email,
+              deviceToken: currentFcmToken || null,
+              status: 'QUEUED_BULK',
+              createdAt: new Date().toISOString()
+            });
+          }
+          sentCount++;
+        }
+
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('Bulk Hearing Reminders Dispatched', {
+            body: `${sentCount} hearing messages queued via Firebase Project contact-d0800.`
+          });
+        }
+        hideLoader();
+        alert(`✅ ${sentCount} Hearing / Bulk messages queued into Firebase (contact-d0800) with your VAPID key pair!`);
+      } catch (err) {
+        hideLoader();
+        alert('Error queueing bulk notifications: ' + err.message);
+      }
+    }
+
+    /* --- MODAL BULK MESSAGING FUNCTIONS --- */
+    function openBulkMessageModal() {
+      const todayStr = new Date().toISOString().split('T')[0];
+      document.getElementById('modalMsgDate').value = todayStr;
+      const courtSel = document.getElementById('modalMsgCourt');
+      courtSel.innerHTML = '<option value="ALL">-- All Courts --</option>';
+      courtOptions.forEach(c => courtSel.innerHTML += `<option value="${c}">${c}</option>`);
+      loadBulkMessageModalList();
+      document.getElementById('bulkMessageModal').style.display = 'flex';
+    }
+
+    function closeBulkMessageModal() {
+      document.getElementById('bulkMessageModal').style.display = 'none';
+    }
+
+    function applyModalMsgPreset(key) {
+      if (MESSAGE_TEMPLATES[key]) {
+        document.getElementById('modalMsgText').value = MESSAGE_TEMPLATES[key];
+        loadBulkMessageModalList();
+      }
+    }
+
+    function loadBulkMessageModalList(highlightCaseId = null) {
+      const dateVal = document.getElementById('modalMsgDate').value;
+      const courtVal = document.getElementById('modalMsgCourt').value;
+      const template = document.getElementById('modalMsgText').value;
+      const container = document.getElementById('modalMsgListContainer');
+
+      let filtered = cases.filter(c => {
+        if (highlightCaseId) return c.id === highlightCaseId;
+        if (dateVal && c.nextDate !== dateVal) return false;
+        if (courtVal !== 'ALL' && c.court !== courtVal) return false;
+        return true;
+      });
+
+      document.getElementById('modalMsgCount').innerText = filtered.length;
+      if (filtered.length === 0) {
+        container.innerHTML = '<p style="color:#64748b; text-align:center; padding:1rem;">No cases found for selected hearing date / court.</p>';
+        return;
+      }
+
+      let html = '';
+      filtered.forEach((c, idx) => {
+        const msg = formatCaseMessage(template, c);
+        const enc = encodeURIComponent(msg);
+        html += `
+          <div class="msg-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.4rem;">
+              <label style="display:inline; cursor:pointer; font-weight:bold; margin:0;">
+                <input type="checkbox" class="modal-msg-cb" value="${c.id}" checked style="width:auto; margin-right:6px;">
+                #${idx + 1} ${c.clientName || 'N/A'} (📞 ${c.clientPhone || 'NA'}) — <strong>${c.caseNo}</strong>
+              </label>
+              <span style="font-size:0.78rem; color:#475569;">${c.court} | ${c.nextDate || 'N/A'}</span>
+            </div>
+            <div style="font-size:0.82rem; margin:0.4rem 0; color:#334155;">${msg}</div>
+            <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+              <button type="button" class="btn-action btn-whatsapp" onclick="sendWhatsAppMessage('${c.clientPhone || ''}', decodeURIComponent('${enc}'))">💬 WhatsApp</button>
+              <button type="button" class="btn-action btn-print" onclick="sendSmsMessage('${c.clientPhone || ''}', decodeURIComponent('${enc}'))">📱 SMS</button>
+              <button type="button" class="btn-action btn-fcm" onclick="queueSingleFcmNotification('${c.id}', decodeURIComponent('${enc}'))">🔔 FCM Push</button>
+              <button type="button" class="btn-action btn-secondary" onclick="copyTextDirect(decodeURIComponent('${enc}'))">📋 Copy</button>
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    function toggleModalSelectAllMsg(masterCb) {
+      document.querySelectorAll('.modal-msg-cb').forEach(cb => cb.checked = masterCb.checked);
+    }
+
+    function copyAllModalMessages() {
+      const checked = Array.from(document.querySelectorAll('.modal-msg-cb:checked'));
+      if (checked.length === 0) return alert('Select at least one case.');
+      const template = document.getElementById('modalMsgText').value;
+      const text = checked.map((cb, i) => {
+        const c = cases.find(x => x.id === cb.value);
+        return c ? `${i + 1}. ${c.clientName || 'Client'} (${c.clientPhone || 'NA'}): ${formatCaseMessage(template, c)}` : '';
+      }).filter(Boolean).join('\n\n');
+      navigator.clipboard.writeText(text).then(() => showCopyToast(`📋 Copied ${checked.length} messages!`));
+    }
+
+    async function sendBulkPushFromModal() {
+      const checked = Array.from(document.querySelectorAll('.modal-msg-cb:checked'));
+      if (checked.length === 0) return alert('Select at least one case.');
+      const template = document.getElementById('modalMsgText').value;
+      showLoader(`Queueing ${checked.length} Hearing Push Messages...`);
+      for (let i = 0; i < checked.length; i++) {
+        const c = cases.find(x => x.id === checked[i].value);
+        if (c) await queueSingleFcmNotification(c.id, formatCaseMessage(template, c));
+      }
+      hideLoader();
+      alert(`✅ ${checked.length} Hearing Date messages queued via FCM (contact-d0800)!`);
     }
 
     window.onload = function() {
