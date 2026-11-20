@@ -920,6 +920,7 @@
 
       <button class="btn-msg" onclick="openBulkMessageModal()">📨 Send Hearing / Bulk Messages</button>
       <button class="btn-caselist" onclick="openCaseListModal()">📜 Print Case List</button>
+      <button class="btn-print" style="width:auto; margin:0; background-color:#0f766e;" onclick="openDetailedCauseListModal()">🖨️ Print Detailed Cause List</button>
       <button class="btn-forward" onclick="openForwardCaseModal()">⏩ Forward Case</button>
       <button class="btn-logbook" onclick="openBulkLogModal()">📖 Update Log Book</button>
       <button class="btn-backup" onclick="openBackupModal()">💾 Backup & Recovery</button>
@@ -932,6 +933,7 @@
     <button class="nav-tab-btn" onclick="switchTab('activeCasesTab', this)">📂 Active Cases & Daily Cause List</button>
     <button class="nav-tab-btn" onclick="switchTab('registerCaseTab', this)">📝 Register New Case</button>
     <button class="nav-tab-btn active" onclick="switchTab('calendarTab', this)">📅 Calendar</button>
+    <button class="nav-tab-btn" onclick="switchTab('clientDetailsTab', this)">👥 Client Details</button>
     <button class="nav-tab-btn" onclick="switchTab('feeSearchTab', this)">💰 Search Fees Between Dates</button>
     <button class="nav-tab-btn" onclick="switchTab('messagingTab', this)">📨 Hearing & Bulk Messaging</button>
   </div>
@@ -977,6 +979,14 @@
           <button type="button" class="btn-court-delete" onclick="deleteSelectedStatus()" title="Delete Selected Status Option">🗑️</button>
         </div>
 
+        <label for="caseType">Case Type (वाद का प्रकार)</label>
+        <div class="court-control-wrapper">
+          <select id="caseType" required></select>
+          <button type="button" class="btn-court-add" onclick="openAddCaseTypeModal()" title="Add New Case Type">+</button>
+          <button type="button" class="btn-court-edit" onclick="openEditCaseTypeModal()" title="Edit Selected Case Type">✎</button>
+          <button type="button" class="btn-court-delete" onclick="deleteSelectedCaseType()" title="Delete Selected Case Type">🗑️</button>
+        </div>
+
         <label for="caseNo">Case Number / CNR</label>
         <input type="text" id="caseNo" required value="NA" placeholder="e.g. CA/1024/2026">
 
@@ -1004,8 +1014,14 @@
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
           <div>
-            <label for="clientName">Client Name</label>
-            <input type="text" id="clientName" required value="NA" placeholder="e.g. Ramesh Kumar">
+            <label for="clientName">Client Name (Role & Name)</label>
+            <div style="display: flex; gap: 0.4rem; margin-top: 0.2rem;">
+              <select id="clientRole" style="width: auto; min-width: 120px; margin-top: 0;">
+                <option value="Plaintiff">Plaintiff</option>
+                <option value="Defendant">Defendant</option>
+              </select>
+              <input type="text" id="clientName" required value="NA" placeholder="e.g. Ramesh Kumar" style="flex: 1; margin-top: 0;">
+            </div>
           </div>
           <div>
             <label for="clientPhone">Client Phone</label>
@@ -1039,6 +1055,60 @@
         <button type="submit" id="saveBtn" style="margin-top:1.2rem;">Save Case File</button>
         <button type="button" class="btn-secondary" style="width:100%; margin-top:0.5rem;" onclick="resetForm()">Clear Form</button>
       </form>
+    </div>
+
+    <!-- Client Details Tab Pane -->
+    <div class="card tab-pane" id="clientDetailsTabPane" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; margin-bottom: 1rem;">
+        <h2 style="border:none; margin:0; padding:0;">👥 Client Details Directory</h2>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <button type="button" class="btn-action btn-excel" onclick="exportClientDetailsCSV()">📥 Export CSV</button>
+          <button type="button" class="btn-action btn-print" onclick="printClientDetails()">🖨️ Print Client List</button>
+        </div>
+      </div>
+
+      <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:1rem; margin-bottom:1.2rem;">
+        <h3 id="clientFormHeading" style="margin-top:0; font-size:0.95rem; color:var(--primary);">+ Add / Save Standalone Client Contact</h3>
+        <form id="standaloneClientForm" onsubmit="handleStandaloneClientSubmit(event)">
+          <input type="hidden" id="standaloneClientId">
+          <div style="display:grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap:0.6rem; align-items:end;">
+            <div>
+              <label for="cdParties" style="margin-top:0;">Parties</label>
+              <input type="text" id="cdParties" required placeholder="e.g. Ramesh Kumar vs. State">
+            </div>
+            <div>
+              <label for="cdName" style="margin-top:0;">Client Name</label>
+              <input type="text" id="cdName" required placeholder="e.g. (Plaintiff) Ramesh Kumar">
+            </div>
+            <div>
+              <label for="cdMobile" style="margin-top:0;">Mobile No</label>
+              <input type="tel" id="cdMobile" required placeholder="e.g. 9876543210">
+            </div>
+            <div style="display:flex; gap:0.4rem;">
+              <button type="submit" id="saveClientContactBtn" style="margin-top:0; width:auto; padding:0.55rem 1rem;">Save</button>
+              <button type="button" id="cancelClientEditBtn" class="btn-secondary" style="margin-top:0; display:none;" onclick="resetStandaloneClientForm()">Cancel</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <input type="text" id="clientDetailsSearch" placeholder="🔍 Search by Parties, Client Name, or Mobile No..." onkeyup="renderClientDetails()" style="margin-bottom:0.8rem;">
+
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Parties</th>
+              <th>Name</th>
+              <th>Mobile No</th>
+              <th>Source / Case No</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="clientDetailsTableBody"></tbody>
+        </table>
+      </div>
     </div>
 
     <!-- 3. Search Fees Between Dates Tab Pane -->
@@ -1259,6 +1329,48 @@
         <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
           <button type="button" class="btn-print" style="margin-top: 0; width: 50%;" onclick="printPartiesCaseList()">🖨️ Print Single-Page Cause List</button>
           <button type="button" class="btn-secondary" style="margin-top: 0; width: 50%;" onclick="closeCaseListModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DETAILED CAUSE LIST WINDOW -->
+  <div id="detailedCauseListModal" class="modal">
+    <div class="modal-content window-modal-content" id="detailedCauseListWindowContent" style="max-width: 980px;">
+      <div class="window-titlebar" onmousedown="startDrag(event, 'detailedCauseListWindowContent')">
+        <div class="window-title">🖨️ Detailed Court-Wise Cause List (Case Type, Case No, Act & Section, Parties, Client Name (Role & Name), Client Phone, Stage)</div>
+        <div class="window-controls">
+          <button type="button" class="window-btn" onclick="toggleWindowMinimize('detailedCauseListWindowContent')" title="Minimize">_</button>
+          <button type="button" class="window-btn" onclick="toggleWindowMaximize('detailedCauseListWindowContent')" title="Maximize / Restore">□</button>
+          <button type="button" class="window-btn btn-close-win" onclick="closeDetailedCauseListModal()" title="Close Window">✕</button>
+        </div>
+      </div>
+      <div class="window-body">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8rem; align-items: end; margin-bottom: 1rem; background: #f1f5f9; padding: 0.8rem; border-radius: 6px;">
+          <div>
+            <label style="margin:0 0 0.25rem 0;" for="detailedCauseDate">Select Hearing Date:</label>
+            <input type="date" id="detailedCauseDate" style="margin: 0;" onchange="loadDetailedCauseListData()">
+          </div>
+          <div>
+            <label style="margin:0 0 0.25rem 0;" for="detailedCauseCourtFilter">Filter Court / Forum:</label>
+            <select id="detailedCauseCourtFilter" style="margin: 0;" onchange="loadDetailedCauseListData()">
+              <option value="ALL">-- All Courts / Forums --</option>
+            </select>
+          </div>
+          <div>
+            <label style="margin:0 0 0.25rem 0;" for="detailedCauseStatusFilter">Filter Status:</label>
+            <select id="detailedCauseStatusFilter" style="margin: 0;" onchange="loadDetailedCauseListData()">
+              <option value="ONGOING_ONLY">Ongoing / Active Only</option>
+              <option value="ALL">All Statuses</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="detailedCauseListContainer" style="max-height: 440px; overflow-y: auto;"></div>
+
+        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+          <button type="button" class="btn-print" style="margin-top: 0; width: 50%; background-color:#0f766e;" onclick="printDetailedCauseList()">🖨️ Print Detailed Cause List (A4)</button>
+          <button type="button" class="btn-secondary" style="margin-top: 0; width: 50%;" onclick="closeDetailedCauseListModal()">Close</button>
         </div>
       </div>
     </div>
@@ -1517,6 +1629,30 @@
     </div>
   </div>
 
+  <!-- Add/Edit Case Type Window -->
+  <div id="addCaseTypeModal" class="modal">
+    <div class="modal-content window-modal-content" id="addCaseTypeWindowContent" style="max-width: 450px;">
+      <div class="window-titlebar" onmousedown="startDrag(event, 'addCaseTypeWindowContent')">
+        <div class="window-title" id="caseTypeModalTitle">Add New Case Type</div>
+        <div class="window-controls">
+          <button type="button" class="window-btn" onclick="toggleWindowMinimize('addCaseTypeWindowContent')" title="Minimize">_</button>
+          <button type="button" class="window-btn" onclick="toggleWindowMaximize('addCaseTypeWindowContent')" title="Maximize / Restore">□</button>
+          <button type="button" class="window-btn btn-close-win" onclick="closeAddCaseTypeModal()" title="Close Window">✕</button>
+        </div>
+      </div>
+      <div class="window-body">
+        <label for="newCaseTypeInput">Case Type Name (वाद का प्रकार)</label>
+        <input type="text" id="newCaseTypeInput" placeholder="e.g. मूल वाद">
+        <input type="hidden" id="oldCaseTypeVal">
+        
+        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+          <button type="button" id="saveCaseTypeBtn" style="margin-top: 0;" onclick="saveNewCaseType()">Save Case Type</button>
+          <button type="button" class="btn-secondary" style="margin-top: 0; width: 100%;" onclick="closeAddCaseTypeModal()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Add Proceedings Option Window -->
   <div id="addStageModal" class="modal">
     <div class="modal-content window-modal-content" id="addStageWindowContent" style="max-width: 450px;">
@@ -1625,12 +1761,15 @@
   <script>
     /* --- OFFLINE-FIRST PERSISTENCE & QUEUE ENGINE --- */
     const STORAGE_KEY_CASES = 'adv_diary_cases_v2';
+    const STORAGE_KEY_CLIENTS = 'adv_diary_clients_v2';
     const STORAGE_KEY_COURTS = 'adv_diary_courts_v2';
     const STORAGE_KEY_STATUSES = 'adv_diary_statuses_v2';
+    const STORAGE_KEY_CASE_TYPES = 'adv_diary_case_types_v2';
     const STORAGE_KEY_STAGES = 'adv_diary_stages_v2';
     const STORAGE_KEY_QUEUE = 'adv_diary_sync_queue_v2';
 
     let cases = [];
+    let standaloneClients = [];
     let syncQueue = [];
     let isSyncing = false;
 
@@ -1642,6 +1781,7 @@
       "1. SDO", "2. ASDO", "3. T", "4. AT", "5. NTS", "6. NTB", "7. RA", "8. GN"
     ];
     let statusOptions = ["Ongoing", "Dropped", "Final"];
+    let caseTypeOptions = ["मूल वाद", "पुनर्स्थापना", "प्रकीर्ण वाद"];
     let stageOptions = [
       "NA", "साक्ष्‍य प्रतिवादी", "उत्तर प्रतिवाद पत्र", "वाद बिन्‍दु निर्धारण", 
       "आदेश हेतु सुरक्षित", "प्रतिवाद पत्र", "बहस", "साक्ष्‍य वादी", 
@@ -1654,11 +1794,17 @@
         const storedCases = localStorage.getItem(STORAGE_KEY_CASES);
         if (storedCases) cases = JSON.parse(storedCases);
 
+        const storedClients = localStorage.getItem(STORAGE_KEY_CLIENTS);
+        if (storedClients) standaloneClients = JSON.parse(storedClients);
+
         const storedCourts = localStorage.getItem(STORAGE_KEY_COURTS);
         if (storedCourts) courtOptions = JSON.parse(storedCourts);
 
         const storedStatuses = localStorage.getItem(STORAGE_KEY_STATUSES);
         if (storedStatuses) statusOptions = JSON.parse(storedStatuses);
+
+        const storedCaseTypes = localStorage.getItem(STORAGE_KEY_CASE_TYPES);
+        if (storedCaseTypes) caseTypeOptions = JSON.parse(storedCaseTypes);
 
         const storedStages = localStorage.getItem(STORAGE_KEY_STAGES);
         if (storedStages) stageOptions = JSON.parse(storedStages);
@@ -1674,8 +1820,10 @@
     function saveStateLocally() {
       try {
         localStorage.setItem(STORAGE_KEY_CASES, JSON.stringify(cases));
+        localStorage.setItem(STORAGE_KEY_CLIENTS, JSON.stringify(standaloneClients));
         localStorage.setItem(STORAGE_KEY_COURTS, JSON.stringify(courtOptions));
         localStorage.setItem(STORAGE_KEY_STATUSES, JSON.stringify(statusOptions));
+        localStorage.setItem(STORAGE_KEY_CASE_TYPES, JSON.stringify(caseTypeOptions));
         localStorage.setItem(STORAGE_KEY_STAGES, JSON.stringify(stageOptions));
         localStorage.setItem(STORAGE_KEY_QUEUE, JSON.stringify(syncQueue));
       } catch(e) {
@@ -1932,8 +2080,12 @@
             await db.collection('settings').doc('courts').set({ options: item.payload });
           } else if (item.action === 'SET_STATUSES') {
             await db.collection('settings').doc('statuses').set({ options: item.payload });
+          } else if (item.action === 'SET_CASE_TYPES') {
+            await db.collection('settings').doc('caseTypes').set({ options: item.payload });
           } else if (item.action === 'SET_STAGES') {
             await db.collection('settings').doc('stages').set({ options: item.payload });
+          } else if (item.action === 'SET_CLIENTS') {
+            await db.collection('settings').doc('clients').set({ list: item.payload });
           }
           syncQueue.shift();
           saveStateLocally();
@@ -2072,12 +2224,228 @@
             </div>
           </div>
           <script>
-            window.onload = function() { window.print(); }
+    window.onload = function() { window.print(); }
           <\/script>
         </body>
         </html>
       `);
       invoiceWindow.document.close();
+    }
+
+    /* --- CLIENT DETAILS DIRECTORY TAB --- */
+    function handleStandaloneClientSubmit(e) {
+      e.preventDefault();
+      const editId = document.getElementById('standaloneClientId').value;
+      const parties = document.getElementById('cdParties').value.trim();
+      const name = document.getElementById('cdName').value.trim();
+      const mobile = document.getElementById('cdMobile').value.trim();
+
+      if (!parties || !name || !mobile) return;
+
+      if (editId) {
+        if (editId.startsWith('case_')) {
+          const realCaseId = editId.replace('case_', '');
+          const targetCase = cases.find(c => c.id === realCaseId);
+          if (targetCase) {
+            targetCase.parties = parties;
+            targetCase.clientName = name;
+            targetCase.clientPhone = mobile;
+            saveCaseLocallyAndQueue(targetCase, false);
+          }
+        } else {
+          const idx = standaloneClients.findIndex(cl => cl.id === editId);
+          if (idx >= 0) {
+            standaloneClients[idx] = { id: editId, parties, name, mobile };
+            saveStateLocally();
+            enqueueSyncItem('SET_CLIENTS', standaloneClients);
+          }
+        }
+      } else {
+        standaloneClients.push({
+          id: 'cli_' + Date.now(),
+          parties,
+          name,
+          mobile
+        });
+        saveStateLocally();
+        enqueueSyncItem('SET_CLIENTS', standaloneClients);
+      }
+
+      resetStandaloneClientForm();
+      renderClientDetails();
+      showCopyToast('✅ Client details saved!');
+    }
+
+    function resetStandaloneClientForm() {
+      document.getElementById('standaloneClientForm').reset();
+      document.getElementById('standaloneClientId').value = '';
+      document.getElementById('clientFormHeading').innerText = '+ Add / Save Standalone Client Contact';
+      document.getElementById('saveClientContactBtn').innerText = 'Save';
+      document.getElementById('cancelClientEditBtn').style.display = 'none';
+    }
+
+    function editClientDirectoryEntry(entryId, parties, name, mobile) {
+      document.getElementById('standaloneClientId').value = entryId;
+      document.getElementById('cdParties').value = decodeURIComponent(parties);
+      document.getElementById('cdName').value = decodeURIComponent(name);
+      document.getElementById('cdMobile').value = decodeURIComponent(mobile);
+      document.getElementById('clientFormHeading').innerText = '✏️ Edit Client Details';
+      document.getElementById('saveClientContactBtn').innerText = 'Update';
+      document.getElementById('cancelClientEditBtn').style.display = 'inline-block';
+      document.getElementById('clientDetailsTabPane').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function deleteStandaloneClient(clientId) {
+      if (!confirm('Delete this client contact entry?')) return;
+      standaloneClients = standaloneClients.filter(cl => cl.id !== clientId);
+      saveStateLocally();
+      enqueueSyncItem('SET_CLIENTS', standaloneClients);
+      renderClientDetails();
+    }
+
+    function getAllCombinedClients() {
+      const combined = [];
+      cases.forEach(c => {
+        combined.push({
+          entryId: 'case_' + c.id,
+          isCase: true,
+          caseId: c.id,
+          caseNo: c.caseNo || 'NA',
+          parties: c.parties || 'NA',
+          name: c.clientName || c.client || 'NA',
+          mobile: c.clientPhone || 'NA'
+        });
+      });
+      standaloneClients.forEach(cl => {
+        combined.push({
+          entryId: cl.id,
+          isCase: false,
+          caseNo: 'Directory Contact',
+          parties: cl.parties || 'NA',
+          name: cl.name || 'NA',
+          mobile: cl.mobile || 'NA'
+        });
+      });
+      return combined;
+    }
+
+    function renderClientDetails() {
+      const tbody = document.getElementById('clientDetailsTableBody');
+      if (!tbody) return;
+      const searchEl = document.getElementById('clientDetailsSearch');
+      const query = searchEl ? searchEl.value.toLowerCase().trim() : '';
+
+      let list = getAllCombinedClients();
+      if (query) {
+        list = list.filter(item =>
+          item.parties.toLowerCase().includes(query) ||
+          item.name.toLowerCase().includes(query) ||
+          item.mobile.toLowerCase().includes(query) ||
+          item.caseNo.toLowerCase().includes(query)
+        );
+      }
+
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#64748b; padding:1.2rem;">No client records found.</td></tr>';
+        return;
+      }
+
+      let html = '';
+      list.forEach((item, idx) => {
+        const encParties = encodeURIComponent(item.parties);
+        const encName = encodeURIComponent(item.name);
+        const encMobile = encodeURIComponent(item.mobile);
+        const cleanPhone = cleanPhoneNumber(item.mobile);
+        const waBtn = cleanPhone
+          ? `<button type="button" class="btn-action btn-whatsapp" onclick="window.open('https://wa.me/${cleanPhone}', '_blank')">💬 WhatsApp</button>`
+          : '';
+        const deleteBtn = !item.isCase
+          ? `<button type="button" class="btn-action btn-delete" onclick="deleteStandaloneClient('${item.entryId}')">🗑️</button>`
+          : '';
+        const sourceBadge = item.isCase
+          ? `<span class="status-tag" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd;">Case: ${item.caseNo}</span>`
+          : `<span class="status-tag">Directory</span>`;
+
+        html += `
+          <tr>
+            <td>${idx + 1}</td>
+            <td><strong>${item.parties}</strong></td>
+            <td>${item.name}</td>
+            <td><strong>${item.mobile}</strong></td>
+            <td>${sourceBadge}</td>
+            <td>
+              <div class="actions">
+                ${waBtn}
+                <button type="button" class="btn-action btn-edit" onclick="editClientDirectoryEntry('${item.entryId}', '${encParties}', '${encName}', '${encMobile}')">✎ Edit</button>
+                ${deleteBtn}
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }
+
+    function exportClientDetailsCSV() {
+      const list = getAllCombinedClients();
+      if (list.length === 0) {
+        alert('No client records to export.');
+        return;
+      }
+      const rows = [['S.No', 'Parties', 'Name', 'Mobile No', 'Source']];
+      list.forEach((item, idx) => {
+        rows.push([
+          idx + 1,
+          `"${(item.parties || '').replace(/"/g, '""')}"`,
+          `"${(item.name || '').replace(/"/g, '""')}"`,
+          `"${(item.mobile || '').replace(/"/g, '""')}"`,
+          `"${(item.caseNo || '').replace(/"/g, '""')}"`
+        ]);
+      });
+      const csvContent = 'data:text/csv;charset=utf-8,' + encodeURIComponent(rows.map(r => r.join(',')).join('\n'));
+      const a = document.createElement('a');
+      a.href = csvContent;
+      a.download = `Client_Details_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    function printClientDetails() {
+      const list = getAllCombinedClients();
+      if (list.length === 0) {
+        alert('No client records to print.');
+        return;
+      }
+      let rowsHtml = '';
+      list.forEach((item, idx) => {
+        rowsHtml += `<tr><td>${idx + 1}</td><td>${item.parties}</td><td>${item.name}</td><td>${item.mobile}</td><td>${item.caseNo}</td></tr>`;
+      });
+      const win = window.open('', '_blank');
+      win.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Client Details Directory</title>
+          <style>
+            body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; font-size: 12px; color: #1e293b; }
+            h2 { margin-top: 0; color: #0f766e; border-bottom: 2px solid #1e293b; padding-bottom: 6px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { border: 1px solid #cbd5e1; padding: 7px; text-align: left; }
+            th { background: #f1f5f9; text-transform: uppercase; font-size: 11px; }
+          </style>
+        </head>
+        <body>
+          <h2>Client Details Directory — Advocate Pt. Sudhanshu Kumar Tiwari</h2>
+          <table>
+            <thead><tr><th>#</th><th>Parties</th><th>Name</th><th>Mobile No</th><th>Case / Source</th></tr></thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+          <script>window.onload = function() { window.print(); }<\/script>
+        </body>
+        </html>
+      `);
+      win.document.close();
     }
 
     /* DOCUMENT VIEWER */
@@ -2133,6 +2501,7 @@
 
       const calendarPane = document.getElementById('calendarTabPane');
       const registerPane = document.getElementById('registerCaseTabPane');
+      const clientDetailsPane = document.getElementById('clientDetailsTabPane');
       const feeSearchPane = document.getElementById('feeSearchTabPane');
       const activeCasesPane = document.getElementById('activeCasesTabPane');
       const messagingPane = document.getElementById('messagingTabPane');
@@ -2140,6 +2509,7 @@
 
       calendarPane.style.display = 'none';
       registerPane.style.display = 'none';
+      if (clientDetailsPane) clientDetailsPane.style.display = 'none';
       feeSearchPane.style.display = 'none';
       activeCasesPane.style.display = 'none';
       if (messagingPane) messagingPane.style.display = 'none';
@@ -2150,6 +2520,9 @@
         renderCalendar();
       } else if (tabId === 'registerCaseTab') {
         registerPane.style.display = 'block';
+      } else if (tabId === 'clientDetailsTab') {
+        if (clientDetailsPane) clientDetailsPane.style.display = 'block';
+        renderClientDetails();
       } else if (tabId === 'feeSearchTab') {
         feeSearchPane.style.display = 'block';
       } else if (tabId === 'messagingTab') {
@@ -2220,8 +2593,14 @@
         const statusDoc = await db.collection('settings').doc('statuses').get();
         if (statusDoc.exists && statusDoc.data().options) statusOptions = statusDoc.data().options;
 
+        const caseTypeDoc = await db.collection('settings').doc('caseTypes').get();
+        if (caseTypeDoc.exists && caseTypeDoc.data().options) caseTypeOptions = caseTypeDoc.data().options;
+
         const stageDoc = await db.collection('settings').doc('stages').get();
         if (stageDoc.exists && stageDoc.data().options) stageOptions = stageDoc.data().options;
+
+        const clientsDoc = await db.collection('settings').doc('clients').get();
+        if (clientsDoc.exists && clientsDoc.data().list) standaloneClients = clientsDoc.data().list;
 
         saveStateLocally();
         saveAndRefresh();
@@ -2237,6 +2616,7 @@
       const cleanData = {
         id: caseData.id || String(Date.now()),
         status: caseData.status || "",
+        caseType: caseData.caseType || "मूल वाद",
         caseNo: caseData.caseNo || "",
         court: caseData.court || "",
         parties: caseData.parties || "",
@@ -2342,6 +2722,19 @@
       });
     }
 
+    function renderCaseTypeDropdown(selectedCaseType = '') {
+      const caseTypeSelect = document.getElementById('caseType');
+      if (!caseTypeSelect) return;
+      caseTypeSelect.innerHTML = '';
+      caseTypeOptions.forEach(ct => {
+        const option = document.createElement('option');
+        option.value = ct;
+        option.text = ct;
+        if (ct === selectedCaseType) option.selected = true;
+        caseTypeSelect.appendChild(option);
+      });
+    }
+
     function renderStageDropdown(selectedStage = '') {
       const stageSelect = document.getElementById('stage');
       stageSelect.innerHTML = '';
@@ -2408,6 +2801,7 @@
           exportDate: new Date().toISOString(),
           courtOptions: courtOptions,
           statusOptions: statusOptions,
+          caseTypeOptions: caseTypeOptions,
           stageOptions: stageOptions,
           cases: cases
         };
@@ -2445,6 +2839,7 @@
             cases = parsed.cases;
             if (parsed.courtOptions) courtOptions = parsed.courtOptions;
             if (parsed.statusOptions) statusOptions = parsed.statusOptions;
+            if (parsed.caseTypeOptions) caseTypeOptions = parsed.caseTypeOptions;
             if (parsed.stageOptions) stageOptions = parsed.stageOptions;
 
             saveStateLocally();
@@ -2882,6 +3277,242 @@
       printWindow.document.close();
     }
 
+    /* --- DETAILED CAUSE LIST MODAL & PRINTING --- */
+    function openDetailedCauseListModal() {
+      const todayStr = new Date().toISOString().split('T')[0];
+      document.getElementById('detailedCauseDate').value = todayStr;
+
+      const courtSelect = document.getElementById('detailedCauseCourtFilter');
+      courtSelect.innerHTML = '<option value="ALL">-- All Courts / Forums --</option>';
+      courtOptions.forEach(c => {
+        courtSelect.innerHTML += `<option value="${c}">${c}</option>`;
+      });
+
+      loadDetailedCauseListData();
+      document.getElementById('detailedCauseListModal').style.display = 'flex';
+    }
+
+    function closeDetailedCauseListModal() {
+      document.getElementById('detailedCauseListModal').style.display = 'none';
+    }
+
+    function getFilteredDetailedCauseCases() {
+      const targetDate = document.getElementById('detailedCauseDate').value;
+      const courtFilter = document.getElementById('detailedCauseCourtFilter').value;
+      const statusFilter = document.getElementById('detailedCauseStatusFilter').value;
+
+      if (!targetDate) return [];
+
+      return cases.filter(c => {
+        if (c.nextDate !== targetDate) return false;
+        if (courtFilter !== 'ALL' && c.court !== courtFilter) return false;
+        if (statusFilter === 'ONGOING_ONLY' && c.status && c.status !== statusOptions[0]) return false;
+        return true;
+      });
+    }
+
+    function loadDetailedCauseListData() {
+      const targetDate = document.getElementById('detailedCauseDate').value;
+      const container = document.getElementById('detailedCauseListContainer');
+      container.innerHTML = '';
+
+      if (!targetDate) {
+        container.innerHTML = '<p style="color:#64748b;">Please select a valid hearing date.</p>';
+        return;
+      }
+
+      const activeCases = getFilteredDetailedCauseCases();
+      if (activeCases.length === 0) {
+        container.innerHTML = `<p style="color:#64748b; font-size:0.9rem; text-align:center; padding: 1.2rem;">No cases scheduled for ${targetDate}.</p>`;
+        return;
+      }
+
+      const groupedByCourt = {};
+      activeCases.forEach(c => {
+        const courtName = c.court || 'Uncategorized Court';
+        if (!groupedByCourt[courtName]) groupedByCourt[courtName] = [];
+        groupedByCourt[courtName].push(c);
+      });
+
+      const sortedCourts = Object.keys(groupedByCourt).sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}));
+
+      sortedCourts.forEach(courtName => {
+        const courtCases = groupedByCourt[courtName];
+        courtCases.sort((a, b) => {
+          const slA = parseFloat(a.causeNo || 0);
+          const slB = parseFloat(b.causeNo || 0);
+          return slA - slB;
+        });
+
+        let tableRows = '';
+        courtCases.forEach((c, idx) => {
+          const currentCauseVal = c.causeNo || (idx + 1);
+          const clientRoleAndName = c.clientName || c.client || 'NA';
+          const clientPhone = c.clientPhone || 'NA';
+          tableRows += `
+            <tr class="detailed-cause-row" data-case-id="${c.id}">
+              <td style="width:70px;">
+                <input type="text" class="cause-no-input" style="width:60px !important;" value="${currentCauseVal}" onchange="updateCaseCauseNo('${c.id}', this.value)">
+              </td>
+              <td><span class="status-tag" style="background:#fef3c7; color:#92400e; border-color:#fde68a;">${c.caseType || 'मूल वाद'}</span></td>
+              <td><strong>${c.caseNo || 'NA'}</strong></td>
+              <td>${c.actSection || 'NA'}</td>
+              <td><strong>${c.parties || 'NA'}</strong></td>
+              <td>${clientRoleAndName}</td>
+              <td>${clientPhone}</td>
+              <td>${c.stage || 'NA'}</td>
+            </tr>
+          `;
+        });
+
+        const accordionGroup = document.createElement('div');
+        accordionGroup.className = 'court-accordion-group expanded';
+        accordionGroup.innerHTML = `
+          <div class="court-accordion-header" onclick="toggleAccordion(this)">
+            <span>🏛️ ${courtName} <span class="badge" style="background:#0f766e; color:white;">${courtCases.length}</span></span>
+            <span class="accordion-arrow">▼</span>
+          </div>
+          <div class="court-accordion-content" style="overflow-x:auto;">
+            <table style="margin-top:0;">
+              <thead>
+                <tr>
+                  <th>Sl. No</th>
+                  <th>Case Type</th>
+                  <th>Case No</th>
+                  <th>Act & Section</th>
+                  <th>Parties</th>
+                  <th>Client Name (Role & Name)</th>
+                  <th>Client Phone</th>
+                  <th>Current Stage</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${tableRows}
+              </tbody>
+            </table>
+          </div>
+        `;
+        container.appendChild(accordionGroup);
+      });
+    }
+
+    function printDetailedCauseList() {
+      const targetDate = document.getElementById('detailedCauseDate').value;
+      const activeCases = getFilteredDetailedCauseCases();
+
+      if (activeCases.length === 0) {
+        alert("No cases available to print for the selected criteria.");
+        return;
+      }
+
+      const causeNoMap = {};
+      document.querySelectorAll('.detailed-cause-row').forEach(row => {
+        const caseId = row.getAttribute('data-case-id');
+        const causeVal = row.querySelector('.cause-no-input').value.trim();
+        if (caseId) causeNoMap[caseId] = causeVal;
+      });
+
+      const groupedByCourt = {};
+      activeCases.forEach(c => {
+        const courtName = c.court || 'Uncategorized Court';
+        if (!groupedByCourt[courtName]) groupedByCourt[courtName] = [];
+        groupedByCourt[courtName].push(c);
+      });
+
+      const sortedCourts = Object.keys(groupedByCourt).sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}));
+
+      let sectionsHtml = '';
+      sortedCourts.forEach(courtName => {
+        const courtCases = groupedByCourt[courtName];
+        courtCases.sort((a, b) => {
+          const slA = parseFloat(causeNoMap[a.id] || a.causeNo || 0);
+          const slB = parseFloat(causeNoMap[b.id] || b.causeNo || 0);
+          return slA - slB;
+        });
+
+        let rowsHtml = '';
+        courtCases.forEach((c, idx) => {
+          const causeSl = causeNoMap[c.id] || c.causeNo || (idx + 1);
+          const clientRoleAndName = c.clientName || c.client || 'NA';
+          const clientPhone = c.clientPhone || 'NA';
+          rowsHtml += `
+            <tr>
+              <td style="text-align:center; font-weight:bold;">${causeSl}</td>
+              <td>${c.caseType || 'मूल वाद'}</td>
+              <td style="font-weight:bold;">${c.caseNo || 'NA'}</td>
+              <td>${c.actSection || 'NA'}</td>
+              <td><strong>${c.parties || 'NA'}</strong></td>
+              <td>${clientRoleAndName}</td>
+              <td>${clientPhone}</td>
+              <td>${c.stage || 'NA'}</td>
+            </tr>
+          `;
+        });
+
+        sectionsHtml += `
+          <div class="court-block">
+            <div class="court-heading">🏛️ ${courtName} (Total: ${courtCases.length})</div>
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:42px; text-align:center;">Sl. No</th>
+                  <th style="width:80px;">Case Type</th>
+                  <th style="width:95px;">Case No</th>
+                  <th style="width:105px;">Act & Section</th>
+                  <th>Parties</th>
+                  <th style="width:135px;">Client Name (Role & Name)</th>
+                  <th style="width:90px;">Client Phone</th>
+                  <th style="width:115px;">Current Stage</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rowsHtml}
+              </tbody>
+            </table>
+          </div>
+        `;
+      });
+
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Detailed Cause List - ${targetDate}</title>
+          <style>
+            @page { size: A4 portrait; margin: 10mm; }
+            body { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: 10px; }
+            .doc-header { border-bottom: 2px solid #1e293b; padding-bottom: 6px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-end; }
+            .doc-header h1 { font-size: 15px; margin: 0; color: #0f766e; text-transform: uppercase; }
+            .doc-header p { margin: 2px 0 0 0; font-size: 11px; color: #475569; }
+            .court-block { margin-bottom: 14px; page-break-inside: avoid; }
+            .court-heading { background: #1e293b; color: #ffffff; padding: 5px 8px; font-weight: bold; font-size: 11.5px; border-radius: 3px 3px 0 0; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #cbd5e1; padding: 5px 6px; text-align: left; vertical-align: top; }
+            th { background: #f1f5f9; color: #1e293b; font-size: 9px; text-transform: uppercase; }
+          </style>
+        </head>
+        <body>
+          <div class="doc-header">
+            <div>
+              <h1>Advocate Pt. Sudhanshu Kumar Tiwari — Detailed Daily Cause List</h1>
+              <p>Court-Wise Schedule with Case Type, Case No, Act & Section, Parties, Client Name (Role & Name), Client Phone & Current Stage</p>
+            </div>
+            <div style="text-align:right; font-size:11px;">
+              <div><strong>Hearing Date:</strong> ${targetDate}</div>
+              <div><strong>Total Cases:</strong> ${activeCases.length}</div>
+            </div>
+          </div>
+          ${sectionsHtml}
+          <script>
+            window.onload = function() { window.print(); }
+          <\/script>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }
+
     /* --- COURT MODALS & ACCORDION --- */
     function openCourtCasesModal(courtName) {
       activeModalCourtName = courtName;
@@ -3016,12 +3647,17 @@
       e.preventDefault();
       const id = document.getElementById('caseId').value || String(Date.now());
       const status = document.getElementById('status').value;
+      const caseType = document.getElementById('caseType').value;
       const caseNo = document.getElementById('caseNo').value.trim();
       const court = document.getElementById('court').value;
       const parties = document.getElementById('parties').value.trim();
       const actSection = document.getElementById('actSection').value.trim() || 'NA';
       const disputeProperty = document.getElementById('disputeProperty').value.trim() || 'NA';
-      const clientName = document.getElementById('clientName').value.trim() || 'NA';
+      const clientRole = document.getElementById('clientRole').value;
+      const rawClientName = document.getElementById('clientName').value.trim() || 'NA';
+      const clientName = (rawClientName !== 'NA' && !/^\((Plaintiff|Defendant)\)/i.test(rawClientName))
+        ? `(${clientRole}) ${rawClientName}`
+        : rawClientName;
       const clientPhone = document.getElementById('clientPhone').value.trim() || 'NA';
       const nextDate = document.getElementById('nextDate').value;
       const stage = document.getElementById('stage').value;
@@ -3031,7 +3667,7 @@
       const causeNo = existingCase ? existingCase.causeNo || "" : "";
 
       const newCaseObj = {
-        id, status, caseNo, court, parties, actSection, disputeProperty,
+        id, status, caseType, caseNo, court, parties, actSection, disputeProperty,
         clientName, clientPhone, nextDate, stage, causeNo,
         documents: tempCaseDocuments, history
       };
@@ -3108,7 +3744,7 @@
 
           rowsHtml += `
             <tr>
-              <td><span class="case-no-hyperlink" onclick="openAndCopyCaseNo('${c.caseNo}')">${c.caseNo}</span></td>
+              <td><span class="case-no-hyperlink" onclick="openAndCopyCaseNo('${c.caseNo}')">${c.caseNo}</span>${c.caseType ? `<br><span class="status-tag" style="background:#fef3c7; color:#92400e; border-color:#fde68a;">${c.caseType}</span>` : ''}</td>
               <td><strong>${c.parties}</strong><br><small style="color:#475569;">Act/Sec: ${c.actSection || 'N/A'}</small></td>
               <td>${getClientDisplay(c)}</td>
               <td><strong>${c.nextDate || 'N/A'}</strong></td>
@@ -3163,12 +3799,21 @@
 
       document.getElementById('caseId').value = targetCase.id;
       renderStatusDropdown(targetCase.status);
+      renderCaseTypeDropdown(targetCase.caseType || caseTypeOptions[0] || 'मूल वाद');
       document.getElementById('caseNo').value = targetCase.caseNo || '';
       renderCourtDropdown(targetCase.court);
       document.getElementById('parties').value = targetCase.parties || '';
       document.getElementById('actSection').value = targetCase.actSection || 'NA';
       document.getElementById('disputeProperty').value = targetCase.disputeProperty || 'NA';
-      document.getElementById('clientName').value = targetCase.clientName || 'NA';
+      const fullClient = targetCase.clientName || 'NA';
+      const roleMatch = fullClient.match(/^\((Plaintiff|Defendant)\)\s*(.*)$/i);
+      if (roleMatch) {
+        document.getElementById('clientRole').value = roleMatch[1].charAt(0).toUpperCase() + roleMatch[1].slice(1).toLowerCase();
+        document.getElementById('clientName').value = roleMatch[2] || 'NA';
+      } else {
+        document.getElementById('clientRole').value = 'Plaintiff';
+        document.getElementById('clientName').value = fullClient;
+      }
       document.getElementById('clientPhone').value = targetCase.clientPhone || 'NA';
       document.getElementById('nextDate').value = targetCase.nextDate || '';
       renderStageDropdown(targetCase.stage);
@@ -3189,6 +3834,7 @@
     function saveAndRefresh() {
       renderCourtDropdown();
       renderStatusDropdown();
+      renderCaseTypeDropdown();
       renderStageDropdown();
       renderFilterBar();
       renderCourtSummaryBar();
@@ -3736,6 +4382,70 @@
         enqueueSyncItem('SET_STATUSES', statusOptions);
         saveAndRefresh();
         renderStatusDropdown();
+      }
+    }
+
+    /* --- CASE TYPE OPTIONS CRUD --- */
+    function openAddCaseTypeModal() {
+      document.getElementById('caseTypeModalTitle').innerText = 'Add New Case Type';
+      document.getElementById('newCaseTypeInput').value = '';
+      document.getElementById('oldCaseTypeVal').value = '';
+      document.getElementById('saveCaseTypeBtn').innerText = 'Save Case Type';
+      document.getElementById('addCaseTypeModal').style.display = 'flex';
+    }
+
+    function openEditCaseTypeModal() {
+      const currentType = document.getElementById('caseType').value;
+      if (!currentType) return;
+      document.getElementById('caseTypeModalTitle').innerText = 'Edit Selected Case Type';
+      document.getElementById('newCaseTypeInput').value = currentType;
+      document.getElementById('oldCaseTypeVal').value = currentType;
+      document.getElementById('saveCaseTypeBtn').innerText = 'Update Case Type';
+      document.getElementById('addCaseTypeModal').style.display = 'flex';
+    }
+
+    function closeAddCaseTypeModal() {
+      document.getElementById('addCaseTypeModal').style.display = 'none';
+    }
+
+    function saveNewCaseType() {
+      const val = document.getElementById('newCaseTypeInput').value.trim();
+      const oldVal = document.getElementById('oldCaseTypeVal').value;
+
+      if (!val) return;
+
+      if (oldVal) {
+        const index = caseTypeOptions.indexOf(oldVal);
+        if (index >= 0) {
+          caseTypeOptions[index] = val;
+          cases.forEach(c => {
+            if (c.caseType === oldVal) {
+              c.caseType = val;
+              enqueueSyncItem('SET_CASE', c);
+            }
+          });
+        }
+      } else {
+        if (!caseTypeOptions.includes(val)) caseTypeOptions.push(val);
+      }
+
+      saveStateLocally();
+      enqueueSyncItem('SET_CASE_TYPES', caseTypeOptions);
+      saveAndRefresh();
+      renderCaseTypeDropdown(val);
+      closeAddCaseTypeModal();
+    }
+
+    function deleteSelectedCaseType() {
+      const currentType = document.getElementById('caseType').value;
+      if (!currentType) return;
+
+      if (confirm(`Delete Case Type "${currentType}"?`)) {
+        caseTypeOptions = caseTypeOptions.filter(ct => ct !== currentType);
+        saveStateLocally();
+        enqueueSyncItem('SET_CASE_TYPES', caseTypeOptions);
+        saveAndRefresh();
+        renderCaseTypeDropdown();
       }
     }
 
