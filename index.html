@@ -2103,11 +2103,12 @@
         alert("You are currently offline. Connect to the internet to sync with Firebase.");
         return;
       }
-      showLoader("Syncing Local Data with Cloud...");
-      triggerBackgroundSync().then(() => {
-        hideLoader();
-        alert("Sync attempt completed!");
-      });
+      if (!auth.currentUser) {
+        alert("Please log in first to sync with Firebase.");
+        return;
+      }
+      showLoader("Syncing Local & Cloud Data with Firebase...");
+      fetchCloudUpdatesIfOnline(true);
     }
 
     /* --- PRINT INVOICE GENERATOR --- */
@@ -2568,16 +2569,22 @@
       auth.signOut();
     }
 
-    /* OFFLINE-FIRST READ & CLOUD FETCH LOGIC */
-    async function fetchCloudUpdatesIfOnline() {
+    /* OFFLINE-FIRST READ & TWO-WAY CLOUD SYNC LOGIC */
+    async function fetchCloudUpdatesIfOnline(isManual = false) {
       saveAndRefresh();
 
-      if (!navigator.onLine) {
+      if (!navigator.onLine || !auth.currentUser) {
         hideLoader();
         return;
       }
 
       try {
+        // 1. Push all pending local changes to Firebase FIRST so local edits are never overwritten
+        if (syncQueue.length > 0) {
+          await triggerBackgroundSync();
+        }
+
+        // 2. Pull latest cases from Firestore
         const caseSnapshot = await db.collection('cases').get();
         if (!caseSnapshot.empty) {
           const cloudCases = [];
@@ -2585,8 +2592,14 @@
             cloudCases.push({ id: doc.id, ...doc.data() });
           });
           cases = cloudCases;
+        } else if (cases.length > 0 && syncQueue.length === 0) {
+          // If cloud is empty but local has records, push local records up to Firebase
+          for (const c of cases) {
+            await db.collection('cases').doc(c.id).set(c);
+          }
         }
 
+        // 3. Pull settings & directory lists from Firestore
         const courtDoc = await db.collection('settings').doc('courts').get();
         if (courtDoc.exists && courtDoc.data().options) courtOptions = courtDoc.data().options;
 
@@ -2604,9 +2617,18 @@
 
         saveStateLocally();
         saveAndRefresh();
-        triggerBackgroundSync();
+        if (document.getElementById('clientDetailsTabPane')?.style.display !== 'none') {
+          renderClientDetails();
+        }
+
+        if (isManual) {
+          alert("✅ Two-way Firebase sync completed successfully!");
+        }
       } catch (error) {
         console.warn("Could not pull cloud updates, operating on local data: ", error);
+        if (isManual) {
+          alert("⚠️ Sync error: " + error.message);
+        }
       } finally {
         hideLoader();
       }
@@ -2841,11 +2863,20 @@
             if (parsed.statusOptions) statusOptions = parsed.statusOptions;
             if (parsed.caseTypeOptions) caseTypeOptions = parsed.caseTypeOptions;
             if (parsed.stageOptions) stageOptions = parsed.stageOptions;
+            if (parsed.standaloneClients) standaloneClients = parsed.standaloneClients;
+
+            // Queue restored records so they sync to Firebase
+            cases.forEach(c => enqueueSyncItem('SET_CASE', c));
+            enqueueSyncItem('SET_COURTS', courtOptions);
+            enqueueSyncItem('SET_STATUSES', statusOptions);
+            enqueueSyncItem('SET_CASE_TYPES', caseTypeOptions);
+            enqueueSyncItem('SET_STAGES', stageOptions);
+            enqueueSyncItem('SET_CLIENTS', standaloneClients);
 
             saveStateLocally();
             saveAndRefresh();
             closeBackupModal();
-            alert("✅ Backup successfully restored locally!");
+            alert("✅ Backup restored and queued for Firebase sync!");
             triggerBackgroundSync();
           }
         } catch (err) {
