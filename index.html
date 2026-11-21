@@ -1531,7 +1531,7 @@
   <div id="detailedCauseListModal" class="modal">
     <div class="modal-content window-modal-content" id="detailedCauseListWindowContent" style="max-width: 980px;">
       <div class="window-titlebar" onmousedown="startDrag(event, 'detailedCauseListWindowContent')">
-        <div class="window-title">🖨️ Detailed Court-Wise Cause List (Sl.No, Case Type/No., Act&Section, Parties, Stage, Client Type & Name & Mobile, Hearing Fee, Next Hearing, Remark)</div>
+        <div class="window-title">🖨️ Detailed Court-Wise Cause List (Sl.No, Case Type/No., Act&Section, Parties, Stage, Client Type & Name & Mobile, Hearing Fee, Next Hearing)</div>
         <div class="window-controls">
           <button type="button" class="window-btn" onclick="toggleWindowMinimize('detailedCauseListWindowContent')" title="Minimize">_</button>
           <button type="button" class="window-btn" onclick="toggleWindowMaximize('detailedCauseListWindowContent')" title="Maximize / Restore">□</button>
@@ -4080,7 +4080,6 @@
           const hearingFeeDisplay = lastHist && (lastHist.fee || lastHist.otherFee)
             ? `₹${(parseFloat(lastHist.fee || 0) + parseFloat(lastHist.otherFee || 0)).toFixed(0)}`
             : '';
-          const lastRemark = lastHist && lastHist.notes ? lastHist.notes : '';
           tableRows += `
             <tr class="detailed-cause-row" data-case-id="${c.id}">
               <td style="width:65px;">
@@ -4096,7 +4095,6 @@
               <td>${clientCombined}</td>
               <td>${hearingFeeDisplay}</td>
               <td></td>
-              <td>${lastRemark}</td>
             </tr>
           `;
         });
@@ -4109,7 +4107,7 @@
             <span class="accordion-arrow">▼</span>
           </div>
           <div class="court-accordion-content" style="overflow-x:auto;">
-            <table style="margin-top:0;">
+            <table style="margin-top:0; font-size:10px;">
               <thead>
                 <tr>
                   <th>Sl.No</th>
@@ -4120,7 +4118,6 @@
                   <th>Client Type & Name & Mobile</th>
                   <th>Hearing Fee</th>
                   <th>Next Hearing</th>
-                  <th>Remark</th>
                 </tr>
               </thead>
               <tbody>
@@ -4177,7 +4174,6 @@
           const hearingFeeDisplay = lastHist && (lastHist.fee || lastHist.otherFee)
             ? `₹${(parseFloat(lastHist.fee || 0) + parseFloat(lastHist.otherFee || 0)).toFixed(0)}`
             : '';
-          const lastRemark = lastHist && lastHist.notes ? lastHist.notes : '';
           rowsHtml += `
             <tr>
               <td class="col-sl" style="text-align:center; font-weight:bold;">${causeSl}</td>
@@ -4188,7 +4184,6 @@
               <td class="col-client">${clientCombined}</td>
               <td class="col-fee" style="text-align:right;">${hearingFeeDisplay}</td>
               <td class="col-next"></td>
-              <td class="col-remark">${lastRemark}</td>
             </tr>
           `;
         });
@@ -4207,7 +4202,6 @@
                   <th class="col-client">Client Type &amp; Name &amp; Mobile</th>
                   <th class="col-fee">Hearing Fee</th>
                   <th class="col-next">Next Hearing</th>
-                  <th class="col-remark">Remark</th>
                 </tr>
               </thead>
               <tbody>
@@ -4226,16 +4220,20 @@
           <title>Detailed Cause List - ${targetDate}</title>
           <style>
             @page { size: A4 portrait; margin: 6mm; }
-            body { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: 10pt; }
-            .doc-header { border-bottom: 2px solid #1e293b; padding-bottom: 5px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-end; }
-            .doc-header h1 { font-size: 12pt; margin: 0; color: #0f766e; text-transform: uppercase; }
-            .doc-header p { margin: 2px 0 0 0; font-size: 9pt; color: #475569; }
+            @media print {
+              @page { size: A4 portrait; margin: 6mm; }
+              html, body { width: 210mm; font-size: 10px !important; }
+            }
+            html, body { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: 10px; }
+            .doc-header { border-bottom: 2px solid #1e293b; padding-bottom: 5px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 10px; }
+            .doc-header h1 { font-size: 10px; margin: 0; color: #0f766e; text-transform: uppercase; font-weight: bold; }
+            .doc-header p { margin: 2px 0 0 0; font-size: 10px; color: #475569; }
             .court-block { margin-bottom: 10px; page-break-inside: auto; }
-            .court-heading { background: #1e293b; color: #ffffff; padding: 4px 6px; font-weight: bold; font-size: 10pt; border-radius: 3px 3px 0 0; page-break-after: avoid; }
-            table { width: 100%; border-collapse: collapse; table-layout: auto; }
+            .court-heading { background: #1e293b; color: #ffffff; padding: 4px 6px; font-weight: bold; font-size: 10px; border-radius: 3px 3px 0 0; page-break-after: avoid; }
+            table { width: 100%; border-collapse: collapse; table-layout: auto; font-size: 10px; }
             tr { page-break-inside: avoid; }
-            th, td { border: 1px solid #cbd5e1; padding: 3px 4px; text-align: left; vertical-align: top; font-size: 10pt; line-height: 1.25; overflow-wrap: break-word; word-wrap: break-word; }
-            th { background: #f1f5f9; color: #1e293b; font-size: 9pt; text-transform: uppercase; white-space: normal; }
+            th, td { border: 1px solid #cbd5e1; padding: 3px 4px; text-align: left; vertical-align: top; font-size: 10px; line-height: 1.25; overflow-wrap: break-word; word-wrap: break-word; }
+            th { background: #f1f5f9; color: #1e293b; font-size: 10px; text-transform: uppercase; white-space: normal; }
             .col-sl { width: 1%; white-space: nowrap; }
             .col-fee, .col-next { width: 1%; white-space: nowrap; }
           </style>
@@ -4246,7 +4244,7 @@
               <h1>Advocate Pt. Sudhanshu Kumar Tiwari — Detailed Daily Cause List</h1>
               <p>Court-Wise Daily Cause List Report</p>
             </div>
-            <div style="text-align:right; font-size:10pt;">
+            <div style="text-align:right; font-size:10px;">
               <div><strong>Hearing Date:</strong> ${targetDate}</div>
               <div><strong>Total Cases:</strong> ${activeCases.length}</div>
             </div>
