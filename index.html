@@ -874,6 +874,78 @@
       padding: 0.8rem;
       margin-bottom: 1rem;
     }
+
+    .user-role-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 14px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      background: #0f766e;
+      color: #ffffff;
+      border: 1px solid #14b8a6;
+    }
+    .user-role-badge.sub-user {
+      background: #0284c7;
+      border-color: #38bdf8;
+    }
+    .perm-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+      gap: 0.5rem;
+      background: #ffffff;
+      padding: 0.75rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      margin-top: 0.4rem;
+    }
+    .perm-check-label {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin-top: 0;
+      cursor: pointer;
+    }
+    .perm-check-label input[type="checkbox"] {
+      width: auto;
+      margin: 0;
+    }
+    .perm-pill {
+      display: inline-block;
+      background: #e0f2fe;
+      color: #0369a1;
+      border: 1px solid #bae6fd;
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      margin: 2px;
+    }
+    .perm-pill.denied {
+      background: #fee2e2;
+      color: #991b1b;
+      border-color: #fecaca;
+      text-decoration: line-through;
+    }
+
+    .audit-tag {
+      display: inline-block;
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      margin-top: 3px;
+    }
+    .audit-tag strong {
+      color: #0f766e;
+    }
   </style>
 </head>
 <body>
@@ -901,29 +973,39 @@
 
   <!-- Mandatory Login Screen Overlay -->
   <div id="authOverlay">
-    <div class="login-card">
+    <div class="login-card" style="max-width: 400px;">
       <h2>🔐 Portal Login</h2>
+      <div style="display:flex; gap:0.4rem; margin-top:0.8rem; background:#f1f5f9; padding:0.3rem; border-radius:6px;">
+        <button type="button" id="btnLoginModeMain" onclick="setLoginMode('MAIN')" style="margin-top:0; padding:0.45rem; font-size:0.82rem; background:var(--accent); color:#fff;">👑 Main User (Admin)</button>
+        <button type="button" id="btnLoginModeSub" onclick="setLoginMode('SUB')" style="margin-top:0; padding:0.45rem; font-size:0.82rem; background:transparent; color:#475569;">👤 Staff / Sub-User</button>
+      </div>
       <form id="loginForm" onsubmit="handleLogin(event)">
-        <input type="email" id="loginUser" placeholder="Email Address" required>
+        <input type="text" id="loginUser" placeholder="Main User Email Address" required>
         <input type="password" id="loginPass" placeholder="Password" required>
-        <button type="submit">Login to Access Diary</button>
-        <div id="loginError" class="login-error">Invalid Email or Password!</div>
+        <button type="submit" id="loginSubmitBtn">Login as Main User</button>
+        <div id="loginError" class="login-error">Invalid Credentials or Account Disabled!</div>
       </form>
+      <div id="subUserLoginHint" style="display:none; font-size:0.78rem; color:#64748b; margin-top:0.7rem;">
+        Enter the Username / Email & Password created by the Main User.
+      </div>
     </div>
   </div>
 
   <header>
-    <h1>⚖️ Advocate Pt. Sudhanshu Kumar Tiwari - Case Diary</h1>
+    <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+      <h1>⚖️ Advocate Pt. Sudhanshu Kumar Tiwari - Case Diary</h1>
+      <span id="activeUserRoleBadge" class="user-role-badge">👑 Main User (Full Access)</span>
+    </div>
     
     <div class="header-btns">
       <div class="filter-bar" id="filterBarContainer" style="display: none;"></div>
 
-      <button class="btn-msg" onclick="openBulkMessageModal()">📨 Send Hearing / Bulk Messages</button>
-      <button class="btn-caselist" onclick="openCaseListModal()">📜 Print Case List</button>
-      <button class="btn-print" style="width:auto; margin:0; background-color:#0f766e;" onclick="openDetailedCauseListModal()">🖨️ Print Detailed Cause List</button>
-      <button class="btn-forward" onclick="openForwardCaseModal()">⏩ Forward Case</button>
-      <button class="btn-logbook" onclick="openBulkLogModal()">📖 Update Log Book</button>
-      <button class="btn-backup" onclick="openBackupModal()">💾 Backup & Recovery</button>
+      <button class="btn-msg perm-messaging-btn" onclick="openBulkMessageModal()">📨 Send Hearing / Bulk Messages</button>
+      <button class="btn-caselist perm-print-btn" onclick="openCaseListModal()">📜 Print Case List</button>
+      <button class="btn-print perm-print-btn" style="width:auto; margin:0; background-color:#0f766e;" onclick="openDetailedCauseListModal()">🖨️ Print Detailed Cause List</button>
+      <button class="btn-forward perm-forward-btn" onclick="openForwardCaseModal()">⏩ Forward Case</button>
+      <button class="btn-logbook perm-logbook-btn" onclick="openBulkLogModal()">📖 Update Log Book</button>
+      <button class="btn-backup perm-backup-btn" onclick="openBackupModal()">💾 Backup & Recovery</button>
       <button class="btn-delete" style="width:auto; margin:0;" onclick="logout()">🔒 Logout</button>
     </div>
   </header>
@@ -936,6 +1018,7 @@
     <button class="nav-tab-btn" onclick="switchTab('clientDetailsTab', this)">👥 Client Details</button>
     <button class="nav-tab-btn" onclick="switchTab('feeSearchTab', this)">💰 Search Fees Between Dates</button>
     <button class="nav-tab-btn" onclick="switchTab('messagingTab', this)">📨 Hearing & Bulk Messaging</button>
+    <button class="nav-tab-btn" id="navTabUserMgmt" onclick="switchTab('userMgmtTab', this)">🛡️ User Management & Permissions</button>
   </div>
 
   <!-- Court/Forum Summary Bar -->
@@ -1240,6 +1323,116 @@
       </div>
 
       <div id="messagingRecipientsContainer" style="max-height: 450px; overflow-y: auto;"></div>
+    </div>
+
+    <!-- 6. User Management & Role Permissions Tab Pane (Main User Only) -->
+    <div class="card tab-pane" id="userMgmtTabPane" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; margin-bottom: 1rem;">
+        <h2 style="border:none; margin:0; padding:0;">🛡️ User Interface & Role Access Management</h2>
+        <span class="user-role-badge">👑 Main User Admin Panel</span>
+      </div>
+
+      <!-- Main User Profile Settings -->
+      <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:6px; padding:1rem; margin-bottom:1.2rem;">
+        <h3 style="margin-top:0; font-size:0.95rem; color:#166534;">👑 Main User (Primary Advocate / Admin) Settings</h3>
+        <div style="display:grid; grid-template-columns: 1.2fr 1.2fr auto; gap:0.75rem; align-items:end;">
+          <div>
+            <label for="mainUserDisplayName" style="margin-top:0;">Main User Display Name</label>
+            <input type="text" id="mainUserDisplayName" value="Adv. Pt. Sudhanshu Kumar Tiwari (Main User)">
+          </div>
+          <div>
+            <label for="mainUserEmailInfo" style="margin-top:0;">Main User Login Email (Firebase Auth)</label>
+            <input type="text" id="mainUserEmailInfo" readonly style="background:#e2e8f0; color:#475569;">
+          </div>
+          <div>
+            <button type="button" style="margin-top:0; width:auto; padding:0.55rem 1rem; background:#16a34a;" onclick="saveMainUserProfile()">💾 Update Main User</button>
+          </div>
+        </div>
+        <p style="font-size:0.8rem; color:#15803d; margin:0.5rem 0 0 0;">
+          Note: The Main User always holds unrestricted privileges across all modules (View, Create, Edit, Delete, Case Forwarding, Log Book, Messaging, Backup & User Management).
+        </p>
+      </div>
+
+      <!-- Create / Edit Sub-User Form -->
+      <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:1rem; margin-bottom:1.2rem;">
+        <h3 id="userFormHeading" style="margin-top:0; font-size:0.95rem; color:var(--primary);">+ Add New User (Junior Advocate / Clerk / Staff)</h3>
+        <form id="managedUserForm" onsubmit="handleManagedUserSubmit(event)">
+          <input type="hidden" id="managedUserId">
+          <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap:0.7rem;">
+            <div>
+              <label for="muFullName" style="margin-top:0;">Full Name *</label>
+              <input type="text" id="muFullName" required placeholder="e.g. Rajesh Sharma">
+            </div>
+            <div>
+              <label for="muRoleTitle" style="margin-top:0;">Designation / Role *</label>
+              <select id="muRoleTitle" required>
+                <option value="Junior Advocate">Junior Advocate</option>
+                <option value="Advocate Clerk (Munshi)">Advocate Clerk (Munshi)</option>
+                <option value="Office Staff">Office Staff</option>
+                <option value="Viewer / Intern">Viewer / Intern</option>
+              </select>
+            </div>
+            <div>
+              <label for="muUsername" style="margin-top:0;">Login Username / Email *</label>
+              <input type="text" id="muUsername" required placeholder="e.g. clerk1 or clerk@office.com">
+            </div>
+            <div>
+              <label for="muPassword" style="margin-top:0;">Login Password *</label>
+              <input type="text" id="muPassword" required placeholder="Set password">
+            </div>
+          </div>
+
+          <div style="margin-top:0.8rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <label style="margin-top:0;">Allowed Module & Action Permissions:</label>
+              <div style="display:flex; gap:0.4rem;">
+                <button type="button" class="btn-sm-ctrl" style="background:#0f766e;" onclick="setAllUserPermCheckboxes(true)">✅ Allow All</button>
+                <button type="button" class="btn-sm-ctrl" style="background:#64748b;" onclick="setAllUserPermCheckboxes(false)">👁️ View Only</button>
+              </div>
+            </div>
+            <div class="perm-grid">
+              <label class="perm-check-label"><input type="checkbox" id="perm_view" checked disabled> 👁️ View Cases & Calendar (Default)</label>
+              <label class="perm-check-label"><input type="checkbox" id="perm_create" checked> 📝 Register / Add Cases</label>
+              <label class="perm-check-label"><input type="checkbox" id="perm_edit" checked> ✎ Edit Cases & Hearings</label>
+              <label class="perm-check-label"><input type="checkbox" id="perm_delete"> 🗑️ Delete Cases / Docs / Records</label>
+              <label class="perm-check-label"><input type="checkbox" id="perm_forward" checked> ⏩ Case Forwarding</label>
+              <label class="perm-check-label"><input type="checkbox" id="perm_logbook" checked> 📖 Update Log Book</label>
+              <label class="perm-check-label"><input type="checkbox" id="perm_clients" checked> 👥 Client Details Directory</label>
+              <label class="perm-check-label"><input type="checkbox" id="perm_fees"> 💰 Search & View Fees</label>
+              <label class="perm-check-label"><input type="checkbox" id="perm_messaging" checked> 📨 Hearing & Bulk Messaging</label>
+              <label class="perm-check-label"><input type="checkbox" id="perm_print" checked> 🖨️ Print Cause Lists & Invoices</label>
+              <label class="perm-check-label"><input type="checkbox" id="perm_backup"> 💾 Backup & Recovery</label>
+              <label class="perm-check-label"><input type="checkbox" id="perm_settings"> ⚙️ Manage Courts/Statuses/Stages</label>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:0.6rem; align-items:center; margin-top:0.9rem;">
+            <label class="perm-check-label" style="margin-right:1rem;">
+              <input type="checkbox" id="muActive" checked> 🟢 Account Active (Can Login)
+            </label>
+            <button type="submit" id="saveManagedUserBtn" style="margin-top:0; width:auto; padding:0.55rem 1.2rem;">💾 Save User Account</button>
+            <button type="button" id="cancelManagedUserEditBtn" class="btn-secondary" style="margin-top:0; display:none;" onclick="resetManagedUserForm()">Cancel Edit</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Existing Users Table -->
+      <h3 style="font-size:0.95rem; color:var(--primary); margin-bottom:0.5rem;">📋 Configured Users & Assigned Permissions</h3>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>User Name & Role</th>
+              <th>Login ID & Password</th>
+              <th>Status</th>
+              <th>Granted Permissions</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="managedUsersTableBody"></tbody>
+        </table>
+      </div>
     </div>
 
   </div>
@@ -1732,6 +1925,9 @@
         <h3 style="font-size:0.95rem;">Past Hearing Records</h3>
         <div id="historyTimeline" class="history-timeline"></div>
 
+        <h3 style="font-size:0.95rem; margin-top:1.2rem;">👤 User Work & Activity Log</h3>
+        <div id="caseAuditTimeline" class="history-timeline" style="border-left-color:#0284c7;"></div>
+
         <button class="btn-secondary" style="margin-top:1rem; width:100%;" onclick="closeModal()">Close History Window</button>
       </div>
     </div>
@@ -1789,6 +1985,345 @@
       "प्रतीक्षा नोटिस तामीला", "अन्य"
     ];
 
+
+    /* --- USER MANAGEMENT & ROLE-BASED ACCESS CONTROL (MAIN USER + SUB-USERS) --- */
+    const STORAGE_KEY_MANAGED_USERS = 'adv_diary_managed_users_v2';
+    const STORAGE_KEY_MAIN_PROFILE = 'adv_diary_main_profile_v2';
+    const STORAGE_KEY_ACTIVE_SESSION = 'adv_diary_active_session_v2';
+
+    let managedUsers = [];
+    let mainUserProfile = {
+      displayName: 'Adv. Pt. Sudhanshu Kumar Tiwari (Main User)',
+      email: ''
+    };
+    let currentUserSession = {
+      type: 'MAIN', // 'MAIN' or 'SUB'
+      id: 'MAIN_ADMIN',
+      name: 'Adv. Pt. Sudhanshu Kumar Tiwari (Main User)',
+      role: 'Main User (Admin)',
+      permissions: {
+        view: true, create: true, edit: true, delete: true,
+        forward: true, logbook: true, clients: true, fees: true,
+        messaging: true, print: true, backup: true, settings: true
+      }
+    };
+    let selectedLoginMode = 'MAIN';
+
+    function setLoginMode(mode) {
+      selectedLoginMode = mode;
+      const btnMain = document.getElementById('btnLoginModeMain');
+      const btnSub = document.getElementById('btnLoginModeSub');
+      const userInp = document.getElementById('loginUser');
+      const submitBtn = document.getElementById('loginSubmitBtn');
+      const hint = document.getElementById('subUserLoginHint');
+      document.getElementById('loginError').style.display = 'none';
+
+      if (mode === 'MAIN') {
+        btnMain.style.background = 'var(--accent)';
+        btnMain.style.color = '#ffffff';
+        btnSub.style.background = 'transparent';
+        btnSub.style.color = '#475569';
+        userInp.type = 'email';
+        userInp.placeholder = 'Main User Email Address';
+        submitBtn.innerText = 'Login as Main User';
+        hint.style.display = 'none';
+      } else {
+        btnSub.style.background = '#0284c7';
+        btnSub.style.color = '#ffffff';
+        btnMain.style.background = 'transparent';
+        btnMain.style.color = '#475569';
+        userInp.type = 'text';
+        userInp.placeholder = 'Sub-User Username or Email';
+        submitBtn.innerText = 'Login as Staff / Sub-User';
+        hint.style.display = 'block';
+      }
+    }
+
+
+    function getCurrentActorLabel() {
+      if (!currentUserSession) return 'Unknown User';
+      const idPart = currentUserSession.username || currentUserSession.email || currentUserSession.id || '';
+      const rolePart = currentUserSession.role || (currentUserSession.type === 'MAIN' ? 'Main User' : 'Sub-User');
+      return idPart ? `${currentUserSession.name} [${idPart}] (${rolePart})` : `${currentUserSession.name} (${rolePart})`;
+    }
+
+    function appendAuditEntry(targetObj, actionDesc) {
+      if (!targetObj) return;
+      const actor = getCurrentActorLabel();
+      const nowIso = new Date().toISOString();
+      const nowReadable = new Date().toLocaleString('en-IN', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', hour12: true
+      });
+      targetObj.lastModifiedBy = actor;
+      targetObj.lastModifiedById = currentUserSession ? (currentUserSession.username || currentUserSession.id) : 'UNKNOWN';
+      targetObj.lastModifiedAction = actionDesc;
+      targetObj.lastModifiedAt = nowReadable;
+      if (!Array.isArray(targetObj.auditLog)) targetObj.auditLog = [];
+      targetObj.auditLog.push({
+        by: actor,
+        userId: currentUserSession ? (currentUserSession.username || currentUserSession.id) : 'UNKNOWN',
+        action: actionDesc,
+        at: nowReadable,
+        iso: nowIso
+      });
+    }
+
+    function hasPerm(permKey) {
+      if (!currentUserSession || currentUserSession.type === 'MAIN') return true;
+      return !!(currentUserSession.permissions && currentUserSession.permissions[permKey]);
+    }
+
+    function requirePerm(permKey, actionLabel = 'perform this action') {
+      if (hasPerm(permKey)) return true;
+      alert(`⛔ Access Denied: Your user account (${currentUserSession.name}) does not have permission to ${actionLabel}. Please contact the Main User.`);
+      return false;
+    }
+
+    function applyUserRolePermissionsUI() {
+      const isMain = currentUserSession.type === 'MAIN';
+      const badge = document.getElementById('activeUserRoleBadge');
+      if (badge) {
+        const uidLabel = currentUserSession.username || currentUserSession.id || '';
+        if (isMain) {
+          badge.className = 'user-role-badge';
+          badge.innerText = `👑 ${currentUserSession.name}${uidLabel ? ' | ID: ' + uidLabel : ''}`;
+        } else {
+          badge.className = 'user-role-badge sub-user';
+          badge.innerText = `👤 ${currentUserSession.name} | ID: ${uidLabel} (${currentUserSession.role})`;
+        }
+      }
+
+      // Main-user-only User Management tab
+      const userMgmtTabBtn = document.getElementById('navTabUserMgmt');
+      if (userMgmtTabBtn) userMgmtTabBtn.style.display = isMain ? 'inline-block' : 'none';
+
+      // Tab buttons visibility based on permissions
+      const tabButtons = document.querySelectorAll('.nav-tab-btn');
+      tabButtons.forEach(btn => {
+        const onclickAttr = btn.getAttribute('onclick') || '';
+        if (onclickAttr.includes('registerCaseTab')) {
+          btn.style.display = hasPerm('create') || hasPerm('edit') ? 'inline-block' : 'none';
+        } else if (onclickAttr.includes('clientDetailsTab')) {
+          btn.style.display = hasPerm('clients') ? 'inline-block' : 'none';
+        } else if (onclickAttr.includes('feeSearchTab')) {
+          btn.style.display = hasPerm('fees') ? 'inline-block' : 'none';
+        } else if (onclickAttr.includes('messagingTab')) {
+          btn.style.display = hasPerm('messaging') ? 'inline-block' : 'none';
+        }
+      });
+
+      // Header buttons visibility based on permissions
+      document.querySelectorAll('.perm-messaging-btn').forEach(el => el.style.display = hasPerm('messaging') ? 'inline-block' : 'none');
+      document.querySelectorAll('.perm-print-btn').forEach(el => el.style.display = hasPerm('print') ? 'inline-block' : 'none');
+      document.querySelectorAll('.perm-forward-btn').forEach(el => el.style.display = hasPerm('forward') ? 'inline-block' : 'none');
+      document.querySelectorAll('.perm-logbook-btn').forEach(el => el.style.display = hasPerm('logbook') ? 'inline-block' : 'none');
+      document.querySelectorAll('.perm-backup-btn').forEach(el => el.style.display = hasPerm('backup') ? 'inline-block' : 'none');
+
+      // Dropdown settings (+ / edit / delete) buttons
+      document.querySelectorAll('.btn-court-add, .btn-court-edit, .btn-court-delete').forEach(el => {
+        if (!el.closest('.multi-doc-section')) {
+          el.style.display = hasPerm('settings') ? 'inline-block' : 'none';
+        }
+      });
+
+      // Main user email display in User Management tab
+      const mainEmailInput = document.getElementById('mainUserEmailInfo');
+      if (mainEmailInput) {
+        mainEmailInput.value = (auth.currentUser && auth.currentUser.email) ? auth.currentUser.email : (mainUserProfile.email || 'Authenticated Admin');
+      }
+      const mainNameInput = document.getElementById('mainUserDisplayName');
+      if (mainNameInput && mainUserProfile.displayName) {
+        mainNameInput.value = mainUserProfile.displayName;
+      }
+    }
+
+    function saveMainUserProfile() {
+      if (!requirePerm('settings', 'update Main User settings')) return;
+      const newName = document.getElementById('mainUserDisplayName').value.trim() || 'Adv. Pt. Sudhanshu Kumar Tiwari (Main User)';
+      mainUserProfile.displayName = newName;
+      if (auth.currentUser && auth.currentUser.email) mainUserProfile.email = auth.currentUser.email;
+      if (currentUserSession.type === 'MAIN') {
+        currentUserSession.name = newName;
+        localStorage.setItem(STORAGE_KEY_ACTIVE_SESSION, JSON.stringify(currentUserSession));
+      }
+      saveStateLocally();
+      enqueueSyncItem('SET_MAIN_PROFILE', mainUserProfile);
+      applyUserRolePermissionsUI();
+      showCopyToast('✅ Main User profile updated!');
+    }
+
+    function setAllUserPermCheckboxes(allowAll) {
+      const keys = ['create', 'edit', 'delete', 'forward', 'logbook', 'clients', 'fees', 'messaging', 'print', 'backup', 'settings'];
+      keys.forEach(k => {
+        const cb = document.getElementById('perm_' + k);
+        if (cb) cb.checked = allowAll;
+      });
+    }
+
+    function handleManagedUserSubmit(e) {
+      e.preventDefault();
+      if (currentUserSession.type !== 'MAIN') {
+        alert('⛔ Only the Main User can create or modify user accounts.');
+        return;
+      }
+
+      const editId = document.getElementById('managedUserId').value;
+      const fullName = document.getElementById('muFullName').value.trim();
+      const roleTitle = document.getElementById('muRoleTitle').value;
+      const username = document.getElementById('muUsername').value.trim();
+      const password = document.getElementById('muPassword').value.trim();
+      const isActive = document.getElementById('muActive').checked;
+
+      if (!fullName || !username || !password) return;
+
+      const duplicate = managedUsers.find(u => u.username.toLowerCase() === username.toLowerCase() && u.id !== editId);
+      if (duplicate) {
+        alert('⚠️ This Username / Email is already assigned to another user.');
+        return;
+      }
+
+      const permissions = {
+        view: true,
+        create: document.getElementById('perm_create').checked,
+        edit: document.getElementById('perm_edit').checked,
+        delete: document.getElementById('perm_delete').checked,
+        forward: document.getElementById('perm_forward').checked,
+        logbook: document.getElementById('perm_logbook').checked,
+        clients: document.getElementById('perm_clients').checked,
+        fees: document.getElementById('perm_fees').checked,
+        messaging: document.getElementById('perm_messaging').checked,
+        print: document.getElementById('perm_print').checked,
+        backup: document.getElementById('perm_backup').checked,
+        settings: document.getElementById('perm_settings').checked
+      };
+
+      if (editId) {
+        const idx = managedUsers.findIndex(u => u.id === editId);
+        if (idx >= 0) {
+          managedUsers[idx] = {
+            ...managedUsers[idx],
+            fullName, roleTitle, username, password, permissions, isActive,
+            updatedAt: new Date().toISOString()
+          };
+        }
+      } else {
+        managedUsers.push({
+          id: 'usr_' + Date.now(),
+          fullName, roleTitle, username, password, permissions, isActive,
+          createdAt: new Date().toISOString()
+        });
+      }
+
+      saveStateLocally();
+      enqueueSyncItem('SET_MANAGED_USERS', managedUsers);
+      resetManagedUserForm();
+      renderManagedUsersTable();
+      showCopyToast('✅ User account & permissions saved!');
+    }
+
+    function resetManagedUserForm() {
+      const form = document.getElementById('managedUserForm');
+      if (form) form.reset();
+      document.getElementById('managedUserId').value = '';
+      document.getElementById('userFormHeading').innerText = '+ Add New User (Junior Advocate / Clerk / Staff)';
+      document.getElementById('saveManagedUserBtn').innerText = '💾 Save User Account';
+      document.getElementById('cancelManagedUserEditBtn').style.display = 'none';
+      document.getElementById('perm_view').checked = true;
+      document.getElementById('muActive').checked = true;
+    }
+
+    function editManagedUser(userId) {
+      const u = managedUsers.find(x => x.id === userId);
+      if (!u) return;
+      document.getElementById('managedUserId').value = u.id;
+      document.getElementById('muFullName').value = u.fullName || '';
+      document.getElementById('muRoleTitle').value = u.roleTitle || 'Office Staff';
+      document.getElementById('muUsername').value = u.username || '';
+      document.getElementById('muPassword').value = u.password || '';
+      document.getElementById('muActive').checked = u.isActive !== false;
+
+      const keys = ['create', 'edit', 'delete', 'forward', 'logbook', 'clients', 'fees', 'messaging', 'print', 'backup', 'settings'];
+      keys.forEach(k => {
+        const cb = document.getElementById('perm_' + k);
+        if (cb) cb.checked = !!(u.permissions && u.permissions[k]);
+      });
+
+      document.getElementById('userFormHeading').innerText = `✏️ Edit User: ${u.fullName}`;
+      document.getElementById('saveManagedUserBtn').innerText = '💾 Update User Account';
+      document.getElementById('cancelManagedUserEditBtn').style.display = 'inline-block';
+      document.getElementById('userMgmtTabPane').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function toggleManagedUserStatus(userId) {
+      const u = managedUsers.find(x => x.id === userId);
+      if (!u) return;
+      u.isActive = u.isActive === false ? true : false;
+      saveStateLocally();
+      enqueueSyncItem('SET_MANAGED_USERS', managedUsers);
+      renderManagedUsersTable();
+      showCopyToast(u.isActive ? `🟢 User ${u.fullName} activated.` : `🔴 User ${u.fullName} disabled.`);
+    }
+
+    function deleteManagedUser(userId) {
+      const u = managedUsers.find(x => x.id === userId);
+      if (!u) return;
+      if (!confirm(`Are you sure you want to delete user "${u.fullName}"?`)) return;
+      managedUsers = managedUsers.filter(x => x.id !== userId);
+      saveStateLocally();
+      enqueueSyncItem('SET_MANAGED_USERS', managedUsers);
+      renderManagedUsersTable();
+      showCopyToast('🗑️ User deleted.');
+    }
+
+    function renderManagedUsersTable() {
+      const tbody = document.getElementById('managedUsersTableBody');
+      if (!tbody) return;
+
+      const permLabels = {
+        view: 'View', create: 'Add Case', edit: 'Edit', delete: 'Delete',
+        forward: 'Forward Case', logbook: 'Log Book', clients: 'Clients',
+        fees: 'Fees', messaging: 'Messaging', print: 'Print', backup: 'Backup', settings: 'Settings'
+      };
+
+      if (managedUsers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#64748b; padding:1.2rem;">No additional sub-users created yet. Use the form above to add staff or junior advocates.</td></tr>';
+        return;
+      }
+
+      let html = '';
+      managedUsers.forEach((u, idx) => {
+        const isActive = u.isActive !== false;
+        const statusBadge = isActive
+          ? '<span class="status-tag" style="background:#dcfce7; color:#166534; border-color:#86efac;">🟢 Active</span>'
+          : '<span class="status-tag" style="background:#fee2e2; color:#991b1b; border-color:#fecaca;">🔴 Disabled</span>';
+
+        let pillsHtml = '';
+        Object.keys(permLabels).forEach(k => {
+          const allowed = u.permissions && u.permissions[k];
+          pillsHtml += `<span class="perm-pill ${allowed ? '' : 'denied'}">${permLabels[k]}</span>`;
+        });
+
+        html += `
+          <tr>
+            <td>${idx + 1}</td>
+            <td><strong>${u.fullName}</strong><br><small style="color:#0284c7; font-weight:600;">${u.roleTitle}</small></td>
+            <td><code>${u.username}</code><br><small style="color:#64748b;">Pass: <code>${u.password}</code></small></td>
+            <td>${statusBadge}</td>
+            <td>${pillsHtml}</td>
+            <td>
+              <div class="actions">
+                <button type="button" class="btn-action btn-edit" onclick="editManagedUser('${u.id}')">✎ Edit</button>
+                <button type="button" class="btn-action btn-secondary" onclick="toggleManagedUserStatus('${u.id}')">${isActive ? '⏸️ Disable' : '▶️ Enable'}</button>
+                <button type="button" class="btn-action btn-delete" onclick="deleteManagedUser('${u.id}')">🗑️ Delete</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }
+
     function initLocalStorageData() {
       try {
         const storedCases = localStorage.getItem(STORAGE_KEY_CASES);
@@ -1811,6 +2346,15 @@
 
         const storedQueue = localStorage.getItem(STORAGE_KEY_QUEUE);
         if (storedQueue) syncQueue = JSON.parse(storedQueue);
+
+        const storedUsers = localStorage.getItem(STORAGE_KEY_MANAGED_USERS);
+        if (storedUsers) managedUsers = JSON.parse(storedUsers);
+
+        const storedMainProf = localStorage.getItem(STORAGE_KEY_MAIN_PROFILE);
+        if (storedMainProf) mainUserProfile = JSON.parse(storedMainProf);
+
+        const storedActiveSess = localStorage.getItem(STORAGE_KEY_ACTIVE_SESSION);
+        if (storedActiveSess) currentUserSession = JSON.parse(storedActiveSess);
       } catch(e) {
         console.error("Local storage read error: ", e);
       }
@@ -1826,6 +2370,8 @@
         localStorage.setItem(STORAGE_KEY_CASE_TYPES, JSON.stringify(caseTypeOptions));
         localStorage.setItem(STORAGE_KEY_STAGES, JSON.stringify(stageOptions));
         localStorage.setItem(STORAGE_KEY_QUEUE, JSON.stringify(syncQueue));
+        localStorage.setItem(STORAGE_KEY_MANAGED_USERS, JSON.stringify(managedUsers));
+        localStorage.setItem(STORAGE_KEY_MAIN_PROFILE, JSON.stringify(mainUserProfile));
       } catch(e) {
         console.error("Local storage save error: ", e);
       }
@@ -1835,8 +2381,9 @@
     function enqueueSyncItem(action, payload) {
       syncQueue.push({
         id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
-        action: action, // 'SET_CASE', 'DELETE_CASE', 'SET_COURTS', 'SET_STATUSES', 'SET_STAGES'
+        action: action,
         payload: payload,
+        performedBy: getCurrentActorLabel(),
         timestamp: Date.now()
       });
       saveStateLocally();
@@ -2086,6 +2633,10 @@
             await db.collection('settings').doc('stages').set({ options: item.payload });
           } else if (item.action === 'SET_CLIENTS') {
             await db.collection('settings').doc('clients').set({ list: item.payload });
+          } else if (item.action === 'SET_MANAGED_USERS') {
+            await db.collection('settings').doc('managedUsers').set({ list: item.payload });
+          } else if (item.action === 'SET_MAIN_PROFILE') {
+            await db.collection('settings').doc('mainProfile').set(item.payload);
           }
           syncQueue.shift();
           saveStateLocally();
@@ -2251,12 +2802,18 @@
             targetCase.parties = parties;
             targetCase.clientName = name;
             targetCase.clientPhone = mobile;
+            appendAuditEntry(targetCase, 'Updated Client Contact');
             saveCaseLocallyAndQueue(targetCase, false);
           }
         } else {
           const idx = standaloneClients.findIndex(cl => cl.id === editId);
           if (idx >= 0) {
-            standaloneClients[idx] = { id: editId, parties, name, mobile };
+            standaloneClients[idx] = {
+              ...standaloneClients[idx],
+              id: editId, parties, name, mobile,
+              updatedBy: getCurrentActorLabel(),
+              updatedAt: new Date().toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })
+            };
             saveStateLocally();
             enqueueSyncItem('SET_CLIENTS', standaloneClients);
           }
@@ -2266,7 +2823,9 @@
           id: 'cli_' + Date.now(),
           parties,
           name,
-          mobile
+          mobile,
+          createdBy: getCurrentActorLabel(),
+          createdAt: new Date().toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })
         });
         saveStateLocally();
         enqueueSyncItem('SET_CLIENTS', standaloneClients);
@@ -2363,9 +2922,11 @@
         const deleteBtn = !item.isCase
           ? `<button type="button" class="btn-action btn-delete" onclick="deleteStandaloneClient('${item.entryId}')">🗑️</button>`
           : '';
+        const rawCase = item.isCase ? cases.find(x => x.id === item.caseId) : standaloneClients.find(x => x.id === item.entryId);
+        const actorInfo = rawCase ? (rawCase.lastModifiedBy || rawCase.updatedBy || rawCase.createdBy || '') : '';
         const sourceBadge = item.isCase
-          ? `<span class="status-tag" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd;">Case: ${item.caseNo}</span>`
-          : `<span class="status-tag">Directory</span>`;
+          ? `<span class="status-tag" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd;">Case: ${item.caseNo}</span>${actorInfo ? `<br><span class="audit-tag">👤 <strong>${actorInfo}</strong></span>` : ''}`
+          : `<span class="status-tag">Directory</span>${actorInfo ? `<br><span class="audit-tag">👤 <strong>${actorInfo}</strong></span>` : ''}`;
 
         html += `
           <tr>
@@ -2485,11 +3046,14 @@
     }
 
     function deleteCaseAttachedDocument(caseId, docIdx) {
+      if (!requirePerm('delete', 'delete attached documents')) return;
       if (!confirm("Are you sure you want to delete this attached document?")) return;
       const targetCase = cases.find(c => c.id === caseId);
       if (!targetCase || !targetCase.documents) return;
 
+      const removedDoc = targetCase.documents[docIdx];
       targetCase.documents.splice(docIdx, 1);
+      appendAuditEntry(targetCase, `Deleted Document (${removedDoc ? removedDoc.name : ''})`);
       saveCaseLocallyAndQueue(targetCase, false);
       renderCases();
       alert("🗑️ Document deleted!");
@@ -2506,6 +3070,7 @@
       const feeSearchPane = document.getElementById('feeSearchTabPane');
       const activeCasesPane = document.getElementById('activeCasesTabPane');
       const messagingPane = document.getElementById('messagingTabPane');
+      const userMgmtPane = document.getElementById('userMgmtTabPane');
       const filterBarContainer = document.getElementById('filterBarContainer');
 
       calendarPane.style.display = 'none';
@@ -2514,6 +3079,7 @@
       feeSearchPane.style.display = 'none';
       activeCasesPane.style.display = 'none';
       if (messagingPane) messagingPane.style.display = 'none';
+      if (userMgmtPane) userMgmtPane.style.display = 'none';
       if (filterBarContainer) filterBarContainer.style.display = 'none';
 
       if (tabId === 'calendarTab') {
@@ -2529,6 +3095,14 @@
       } else if (tabId === 'messagingTab') {
         if (messagingPane) messagingPane.style.display = 'block';
         initMessagingTab();
+      } else if (tabId === 'userMgmtTab') {
+        if (currentUserSession.type !== 'MAIN') {
+          alert('⛔ Only the Main User can access User Management.');
+          return;
+        }
+        const userMgmtPane = document.getElementById('userMgmtTabPane');
+        if (userMgmtPane) userMgmtPane.style.display = 'block';
+        renderManagedUsersTable();
       } else if (tabId === 'activeCasesTab') {
         activeCasesPane.style.display = 'block';
         if (filterBarContainer) filterBarContainer.style.display = 'flex';
@@ -2536,11 +3110,53 @@
       }
     }
 
-    /* AUTHENTICATION CONTROL */
+    /* AUTHENTICATION CONTROL (MAIN USER & SUB-USER) */
     auth.onAuthStateChanged((user) => {
+      const savedSessRaw = localStorage.getItem(STORAGE_KEY_ACTIVE_SESSION);
+      let savedSess = null;
+      try { if (savedSessRaw) savedSess = JSON.parse(savedSessRaw); } catch(e) {}
+
       if (user) {
+        if (savedSess && savedSess.type === 'SUB') {
+          currentUserSession = savedSess;
+        } else {
+          currentUserSession = {
+            type: 'MAIN',
+            id: user.uid,
+            username: user.email || mainUserProfile.email || 'Main Admin',
+            name: mainUserProfile.displayName || 'Adv. Pt. Sudhanshu Kumar Tiwari (Main User)',
+            role: 'Main User (Admin)',
+            permissions: {
+              view: true, create: true, edit: true, delete: true,
+              forward: true, logbook: true, clients: true, fees: true,
+              messaging: true, print: true, backup: true, settings: true
+            }
+          };
+          localStorage.setItem(STORAGE_KEY_ACTIVE_SESSION, JSON.stringify(currentUserSession));
+        }
         document.getElementById('authOverlay').style.display = 'none';
+        applyUserRolePermissionsUI();
         fetchCloudUpdatesIfOnline();
+      } else if (savedSess && savedSess.type === 'SUB') {
+        const matchedUser = managedUsers.find(u => u.id === savedSess.id && u.isActive !== false);
+        if (matchedUser) {
+          currentUserSession = {
+            type: 'SUB',
+            id: matchedUser.id,
+            username: matchedUser.username,
+            name: matchedUser.fullName,
+            role: matchedUser.roleTitle,
+            permissions: matchedUser.permissions || { view: true }
+          };
+          document.getElementById('authOverlay').style.display = 'none';
+          applyUserRolePermissionsUI();
+          saveAndRefresh();
+          hideLoader();
+        } else {
+          localStorage.removeItem(STORAGE_KEY_ACTIVE_SESSION);
+          document.getElementById('authOverlay').style.display = 'flex';
+          hideLoader();
+        }
       } else {
         document.getElementById('authOverlay').style.display = 'flex';
         hideLoader();
@@ -2549,24 +3165,80 @@
 
     function handleLogin(e) {
       e.preventDefault();
-      const email = document.getElementById('loginUser').value.trim();
+      const loginId = document.getElementById('loginUser').value.trim();
       const pass = document.getElementById('loginPass').value.trim();
+      const errBox = document.getElementById('loginError');
 
-      showLoader("Authenticating User...");
-      auth.signInWithEmailAndPassword(email, pass)
-        .then(() => {
-          document.getElementById('loginError').style.display = 'none';
+      if (selectedLoginMode === 'SUB') {
+        const foundSub = managedUsers.find(u => u.username.toLowerCase() === loginId.toLowerCase() && u.password === pass);
+        if (!foundSub) {
+          errBox.innerText = 'Invalid Sub-User Username or Password!';
+          errBox.style.display = 'block';
+          return;
+        }
+        if (foundSub.isActive === false) {
+          errBox.innerText = 'This user account has been disabled by the Main User.';
+          errBox.style.display = 'block';
+          return;
+        }
+        currentUserSession = {
+          type: 'SUB',
+          id: foundSub.id,
+          username: foundSub.username,
+          name: foundSub.fullName,
+          role: foundSub.roleTitle,
+          permissions: foundSub.permissions || { view: true }
+        };
+        localStorage.setItem(STORAGE_KEY_ACTIVE_SESSION, JSON.stringify(currentUserSession));
+        errBox.style.display = 'none';
+        document.getElementById('loginForm').reset();
+        document.getElementById('authOverlay').style.display = 'none';
+        applyUserRolePermissionsUI();
+        switchTab('calendarTab', document.querySelector('.nav-tab-btn[onclick*="calendarTab"]'));
+        saveAndRefresh();
+        showCopyToast(`👋 Welcome, ${foundSub.fullName} (${foundSub.roleTitle})!`);
+        return;
+      }
+
+      showLoader("Authenticating Main User...");
+      auth.signInWithEmailAndPassword(loginId, pass)
+        .then((cred) => {
+          currentUserSession = {
+            type: 'MAIN',
+            id: cred.user.uid,
+            username: cred.user.email || loginId,
+            name: mainUserProfile.displayName || 'Adv. Pt. Sudhanshu Kumar Tiwari (Main User)',
+            role: 'Main User (Admin)',
+            permissions: {
+              view: true, create: true, edit: true, delete: true,
+              forward: true, logbook: true, clients: true, fees: true,
+              messaging: true, print: true, backup: true, settings: true
+            }
+          };
+          localStorage.setItem(STORAGE_KEY_ACTIVE_SESSION, JSON.stringify(currentUserSession));
+          errBox.style.display = 'none';
           document.getElementById('loginForm').reset();
+          applyUserRolePermissionsUI();
         })
         .catch(() => {
           hideLoader();
-          document.getElementById('loginError').style.display = 'block';
+          errBox.innerText = 'Invalid Main User Email or Password!';
+          errBox.style.display = 'block';
         });
     }
 
     function logout() {
       showLoader("Signing Out...");
-      auth.signOut();
+      localStorage.removeItem(STORAGE_KEY_ACTIVE_SESSION);
+      if (auth.currentUser) {
+        auth.signOut().finally(() => {
+          hideLoader();
+          document.getElementById('authOverlay').style.display = 'flex';
+        });
+      } else {
+        hideLoader();
+        document.getElementById('authOverlay').style.display = 'flex';
+      }
     }
 
     /* OFFLINE-FIRST READ & TWO-WAY CLOUD SYNC LOGIC */
@@ -2615,6 +3287,12 @@
         const clientsDoc = await db.collection('settings').doc('clients').get();
         if (clientsDoc.exists && clientsDoc.data().list) standaloneClients = clientsDoc.data().list;
 
+        const usersDoc = await db.collection('settings').doc('managedUsers').get();
+        if (usersDoc.exists && usersDoc.data().list) managedUsers = usersDoc.data().list;
+
+        const mainProfDoc = await db.collection('settings').doc('mainProfile').get();
+        if (mainProfDoc.exists) mainUserProfile = { ...mainUserProfile, ...mainProfDoc.data() };
+
         saveStateLocally();
         saveAndRefresh();
         if (document.getElementById('clientDetailsTabPane')?.style.display !== 'none') {
@@ -2651,7 +3329,14 @@
         stage: caseData.stage || "",
         causeNo: caseData.causeNo !== undefined && caseData.causeNo !== null ? String(caseData.causeNo) : "",
         documents: Array.isArray(caseData.documents) ? caseData.documents : [],
-        history: Array.isArray(caseData.history) ? caseData.history : []
+        history: Array.isArray(caseData.history) ? caseData.history : [],
+        createdBy: caseData.createdBy || getCurrentActorLabel(),
+        createdAt: caseData.createdAt || new Date().toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }),
+        lastModifiedBy: caseData.lastModifiedBy || getCurrentActorLabel(),
+        lastModifiedById: caseData.lastModifiedById || (currentUserSession ? (currentUserSession.username || currentUserSession.id) : 'UNKNOWN'),
+        lastModifiedAction: caseData.lastModifiedAction || (isNew ? 'Registered Case' : 'Updated Case'),
+        lastModifiedAt: caseData.lastModifiedAt || new Date().toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }),
+        auditLog: Array.isArray(caseData.auditLog) ? caseData.auditLog : []
       };
 
       const existingIndex = cases.findIndex(c => c.id === cleanData.id);
@@ -2667,6 +3352,7 @@
     }
 
     function deleteCaseLocallyAndQueue(caseId) {
+      if (!requirePerm('delete', 'delete case records')) return;
       cases = cases.filter(c => c.id !== caseId);
       saveStateLocally();
       enqueueSyncItem('DELETE_CASE', { id: caseId });
@@ -2809,6 +3495,7 @@
     }
 
     function openBackupModal() {
+      if (!requirePerm('backup', 'access backup and recovery')) return;
       document.getElementById('backupModal').style.display = 'flex';
     }
 
@@ -2889,6 +3576,7 @@
 
     /* --- BULK UPDATE LOG BOOK HANDLERS --- */
     function openBulkLogModal() {
+      if (!requirePerm('logbook', 'update the log book')) return;
       const todayStr = new Date().toISOString().split('T')[0];
       document.getElementById('bulkLogDate').value = todayStr;
       
@@ -3078,12 +3766,15 @@
         notes: finalNotes,
         assignedNextDate: nextDateVal,
         fee: feeVal,
-        otherFee: otherFeeVal
+        otherFee: otherFeeVal,
+        loggedBy: getCurrentActorLabel(),
+        updatedAt: new Date().toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })
       });
 
       targetCase.status = statusVal || targetCase.status;
       targetCase.stage = stageVal || targetCase.stage;
       targetCase.nextDate = nextDateVal;
+      appendAuditEntry(targetCase, `Log Book Forward (${currentDate} -> ${nextDateVal})`);
 
       saveCaseLocallyAndQueue(targetCase, false);
       loadBulkLogCases();
@@ -3137,12 +3828,15 @@
           notes: finalNotes,
           assignedNextDate: nextDateVal,
           fee: feeVal,
-          otherFee: otherFeeVal
+          otherFee: otherFeeVal,
+          loggedBy: getCurrentActorLabel(),
+          updatedAt: new Date().toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })
         });
 
         targetCase.status = statusVal || masterStatus || targetCase.status;
         targetCase.stage = stageVal || targetCase.stage;
         targetCase.nextDate = nextDateVal;
+        appendAuditEntry(targetCase, `Bulk Log Book Update (${currentDate} -> ${nextDateVal})`);
 
         saveCaseLocallyAndQueue(targetCase, false);
       }
@@ -3222,6 +3916,7 @@
       const targetCase = cases.find(c => c.id === caseId);
       if (targetCase) {
         targetCase.causeNo = value.trim();
+        appendAuditEntry(targetCase, `Updated Cause Sl. No (${value.trim()})`);
         saveCaseLocallyAndQueue(targetCase, false);
       }
     }
@@ -3482,17 +4177,18 @@
           const hearingFeeDisplay = lastHist && (lastHist.fee || lastHist.otherFee)
             ? `₹${(parseFloat(lastHist.fee || 0) + parseFloat(lastHist.otherFee || 0)).toFixed(0)}`
             : '';
+          const lastRemark = lastHist && lastHist.notes ? lastHist.notes : '';
           rowsHtml += `
             <tr>
-              <td style="text-align:center; font-weight:bold;">${causeSl}</td>
-              <td>${c.caseType || 'मूल वाद'}<br><strong>${c.caseNo || 'NA'}</strong></td>
-              <td>${c.actSection || 'NA'}</td>
-              <td><strong>${c.parties || 'NA'}</strong></td>
-              <td>${c.stage || 'NA'}</td>
-              <td>${clientCombined}</td>
-              <td style="text-align:right;">${hearingFeeDisplay}</td>
-              <td></td>
-              <td></td>
+              <td class="col-sl" style="text-align:center; font-weight:bold;">${causeSl}</td>
+              <td class="col-case">${c.caseType || 'मूल वाद'}<br><strong>${c.caseNo || 'NA'}</strong></td>
+              <td class="col-act">${c.actSection || 'NA'}</td>
+              <td class="col-parties"><strong>${c.parties || 'NA'}</strong></td>
+              <td class="col-stage">${c.stage || 'NA'}</td>
+              <td class="col-client">${clientCombined}</td>
+              <td class="col-fee" style="text-align:right;">${hearingFeeDisplay}</td>
+              <td class="col-next"></td>
+              <td class="col-remark">${lastRemark}</td>
             </tr>
           `;
         });
@@ -3503,15 +4199,15 @@
             <table>
               <thead>
                 <tr>
-                  <th style="width:36px; text-align:center;">Sl.No</th>
-                  <th style="width:95px;">Case Type/No.</th>
-                  <th style="width:90px;">Act&amp;Section</th>
-                  <th>Parties</th>
-                  <th style="width:85px;">Stage</th>
-                  <th style="width:125px;">Client Type &amp; Name &amp; Mobile</th>
-                  <th style="width:62px;">Hearing Fee</th>
-                  <th style="width:72px;">Next Hearing</th>
-                  <th style="width:95px;">Remark</th>
+                  <th class="col-sl" style="text-align:center;">Sl.No</th>
+                  <th class="col-case">Case Type/No.</th>
+                  <th class="col-act">Act&amp;Section</th>
+                  <th class="col-parties">Parties</th>
+                  <th class="col-stage">Stage</th>
+                  <th class="col-client">Client Type &amp; Name &amp; Mobile</th>
+                  <th class="col-fee">Hearing Fee</th>
+                  <th class="col-next">Next Hearing</th>
+                  <th class="col-remark">Remark</th>
                 </tr>
               </thead>
               <tbody>
@@ -3529,16 +4225,19 @@
         <head>
           <title>Detailed Cause List - ${targetDate}</title>
           <style>
-            @page { size: A4 landscape; margin: 8mm; }
-            body { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: 9.5px; }
-            .doc-header { border-bottom: 2px solid #1e293b; padding-bottom: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-end; }
-            .doc-header h1 { font-size: 14px; margin: 0; color: #0f766e; text-transform: uppercase; }
-            .doc-header p { margin: 2px 0 0 0; font-size: 10px; color: #475569; }
-            .court-block { margin-bottom: 12px; page-break-inside: avoid; }
-            .court-heading { background: #1e293b; color: #ffffff; padding: 5px 8px; font-weight: bold; font-size: 11px; border-radius: 3px 3px 0 0; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #cbd5e1; padding: 5px 5px; text-align: left; vertical-align: top; }
-            th { background: #f1f5f9; color: #1e293b; font-size: 8.5px; text-transform: uppercase; }
+            @page { size: A4 portrait; margin: 6mm; }
+            body { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: 10pt; }
+            .doc-header { border-bottom: 2px solid #1e293b; padding-bottom: 5px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-end; }
+            .doc-header h1 { font-size: 12pt; margin: 0; color: #0f766e; text-transform: uppercase; }
+            .doc-header p { margin: 2px 0 0 0; font-size: 9pt; color: #475569; }
+            .court-block { margin-bottom: 10px; page-break-inside: auto; }
+            .court-heading { background: #1e293b; color: #ffffff; padding: 4px 6px; font-weight: bold; font-size: 10pt; border-radius: 3px 3px 0 0; page-break-after: avoid; }
+            table { width: 100%; border-collapse: collapse; table-layout: auto; }
+            tr { page-break-inside: avoid; }
+            th, td { border: 1px solid #cbd5e1; padding: 3px 4px; text-align: left; vertical-align: top; font-size: 10pt; line-height: 1.25; overflow-wrap: break-word; word-wrap: break-word; }
+            th { background: #f1f5f9; color: #1e293b; font-size: 9pt; text-transform: uppercase; white-space: normal; }
+            .col-sl { width: 1%; white-space: nowrap; }
+            .col-fee, .col-next { width: 1%; white-space: nowrap; }
           </style>
         </head>
         <body>
@@ -3547,7 +4246,7 @@
               <h1>Advocate Pt. Sudhanshu Kumar Tiwari — Detailed Daily Cause List</h1>
               <p>Court-Wise Daily Cause List Report</p>
             </div>
-            <div style="text-align:right; font-size:11px;">
+            <div style="text-align:right; font-size:10pt;">
               <div><strong>Hearing Date:</strong> ${targetDate}</div>
               <div><strong>Total Cases:</strong> ${activeCases.length}</div>
             </div>
@@ -3659,7 +4358,10 @@
             <td>${c.parties}</td>
             <td>${getClientDisplay(c)}</td>
             <td>${c.nextDate || 'N/A'}</td>
-            <td><span class="status-tag">${c.status || 'Ongoing'}</span></td>
+            <td>
+              <span class="status-tag">${c.status || 'Ongoing'}</span>
+              ${c.lastModifiedBy ? `<br><span class="audit-tag">👤 <strong>${c.lastModifiedBy}</strong></span>` : ''}
+            </td>
             <td>
               <div class="actions">
                 <button type="button" class="btn-action btn-msg" onclick="sendSingleCaseQuickMessage('${c.id}')">📨 Message</button>
@@ -3694,6 +4396,9 @@
     /* --- CASE FORM & LIST rendering --- */
     function handleCaseSubmit(e) {
       e.preventDefault();
+      const isEditingExisting = !!document.getElementById('caseId').value;
+      if (isEditingExisting && !requirePerm('edit', 'edit existing cases')) return;
+      if (!isEditingExisting && !requirePerm('create', 'register new cases')) return;
       const id = document.getElementById('caseId').value || String(Date.now());
       const status = document.getElementById('status').value;
       const caseType = document.getElementById('caseType').value;
@@ -3714,14 +4419,18 @@
       const existingCase = cases.find(c => c.id === id);
       const history = existingCase ? existingCase.history || [] : [];
       const causeNo = existingCase ? existingCase.causeNo || "" : "";
+      const isNew = !existingCase;
 
       const newCaseObj = {
         id, status, caseType, caseNo, court, parties, actSection, disputeProperty,
         clientName, clientPhone, nextDate, stage, causeNo,
-        documents: tempCaseDocuments, history
+        documents: tempCaseDocuments, history,
+        createdBy: existingCase && existingCase.createdBy ? existingCase.createdBy : getCurrentActorLabel(),
+        createdAt: existingCase && existingCase.createdAt ? existingCase.createdAt : new Date().toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }),
+        auditLog: existingCase && Array.isArray(existingCase.auditLog) ? [...existingCase.auditLog] : []
       };
+      appendAuditEntry(newCaseObj, isNew ? 'Registered New Case' : 'Edited Case Details');
 
-      const isNew = !existingCase;
       saveCaseLocallyAndQueue(newCaseObj, isNew);
       resetForm();
       switchTab('activeCasesTab', document.querySelector('.nav-tab-btn:nth-child(1)'));
@@ -3783,7 +4492,7 @@
               docsHtml += `
                 <div style="display:inline-flex; align-items:center; gap:2px; background:#e0f2fe; padding:2px 6px; border-radius:4px; margin:2px; font-size:0.75rem;">
                   <span style="cursor:pointer; color:#0284c7; font-weight:bold;" onclick="viewCaseAttachedDocument('${c.id}', ${dIdx})">👁️ ${doc.name}</span>
-                  <span style="cursor:pointer; color:#dc2626; margin-left:4px;" onclick="deleteCaseAttachedDocument('${c.id}', ${dIdx})">✕</span>
+                  ${hasPerm('delete') ? `<span style="cursor:pointer; color:#dc2626; margin-left:4px;" onclick="deleteCaseAttachedDocument('${c.id}', ${dIdx})">✕</span>` : ''}
                 </div>
               `;
             });
@@ -3798,14 +4507,18 @@
               <td>${getClientDisplay(c)}</td>
               <td><strong>${c.nextDate || 'N/A'}</strong></td>
               <td>${c.stage || 'N/A'}</td>
-              <td><span class="status-tag">${c.status || 'Ongoing'}</span><br>${docsHtml}</td>
+              <td>
+                <span class="status-tag">${c.status || 'Ongoing'}</span><br>
+                ${docsHtml}
+                ${c.lastModifiedBy ? `<div class="audit-tag" title="${c.lastModifiedAction || 'Updated'} on ${c.lastModifiedAt || ''}">👤 Work by: <strong>${c.lastModifiedBy}</strong>${c.lastModifiedAt ? ' (' + c.lastModifiedAt + ')' : ''}</div>` : ''}
+              </td>
               <td>
                 <div class="actions">
-                  <button type="button" class="btn-action btn-msg" onclick="sendSingleCaseQuickMessage('${c.id}')">📨 Message</button>
-                  <button type="button" class="btn-action btn-invoice" onclick="printCaseInvoice('${c.id}')">🖨️ Invoice</button>
+                  ${hasPerm('messaging') ? `<button type="button" class="btn-action btn-msg" onclick="sendSingleCaseQuickMessage('${c.id}')">📨 Message</button>` : ''}
+                  ${hasPerm('print') ? `<button type="button" class="btn-action btn-invoice" onclick="printCaseInvoice('${c.id}')">🖨️ Invoice</button>` : ''}
                   <button type="button" class="btn-action btn-history" onclick="openHistoryModal('${c.id}')">📖 History</button>
-                  <button type="button" class="btn-action btn-edit" onclick="editCase('${c.id}')">✎ Edit</button>
-                  <button type="button" class="btn-action btn-delete" onclick="deleteCaseLocallyAndQueue('${c.id}')">🗑️ Delete</button>
+                  ${hasPerm('edit') ? `<button type="button" class="btn-action btn-edit" onclick="editCase('${c.id}')">✎ Edit</button>` : ''}
+                  ${hasPerm('delete') ? `<button type="button" class="btn-action btn-delete" onclick="deleteCaseLocallyAndQueue('${c.id}')">🗑️ Delete</button>` : ''}
                 </div>
               </td>
             </tr>
@@ -3843,6 +4556,7 @@
     }
 
     function editCase(id) {
+      if (!requirePerm('edit', 'edit case records')) return;
       const targetCase = cases.find(c => c.id === id);
       if (!targetCase) return;
 
@@ -3881,6 +4595,7 @@
     }
 
     function saveAndRefresh() {
+      applyUserRolePermissionsUI();
       renderCourtDropdown();
       renderStatusDropdown();
       renderCaseTypeDropdown();
@@ -3923,6 +4638,28 @@
       document.getElementById('cancelHearingEditBtn').style.display = 'none';
 
       renderHistoryTimeline(targetCase);
+
+      const auditContainer = document.getElementById('caseAuditTimeline');
+      if (auditContainer) {
+        if (targetCase.auditLog && targetCase.auditLog.length > 0) {
+          auditContainer.innerHTML = targetCase.auditLog.slice().reverse().map(entry => `
+            <div class="history-item" style="padding:0.55rem 0.8rem; margin-bottom:0.5rem;">
+              <div style="font-size:0.84rem;"><strong>${entry.action}</strong> — <span style="color:#0f766e; font-weight:600;">👤 ${entry.by}</span></div>
+              <div style="font-size:0.75rem; color:#64748b;">🕒 ${entry.at}</div>
+            </div>
+          `).join('');
+        } else if (targetCase.lastModifiedBy || targetCase.createdBy) {
+          auditContainer.innerHTML = `
+            <div class="history-item" style="padding:0.55rem 0.8rem;">
+              <div style="font-size:0.84rem;"><strong>${targetCase.lastModifiedAction || 'Recorded'}</strong> — <span style="color:#0f766e; font-weight:600;">👤 ${targetCase.lastModifiedBy || targetCase.createdBy}</span></div>
+              <div style="font-size:0.75rem; color:#64748b;">🕒 ${targetCase.lastModifiedAt || targetCase.createdAt || ''}</div>
+            </div>
+          `;
+        } else {
+          auditContainer.innerHTML = '<p style="color:#64748b; font-size:0.85rem;">No user activity log recorded yet.</p>';
+        }
+      }
+
       document.getElementById('historyModal').style.display = 'flex';
     }
 
@@ -3952,6 +4689,7 @@
           <div style="margin-top:0.3rem; font-size:0.85rem;">Stage: <strong>${h.stage || 'N/A'}</strong></div>
           <div style="margin-top:0.3rem; font-size:0.88rem;">Proceedings / Notes: ${h.notes}</div>
           <div style="margin-top:0.3rem; font-size:0.82rem; color:#0284c7;">Next Assigned Date: <strong>${h.assignedNextDate || 'N/A'}</strong></div>
+          ${(h.updatedBy || h.loggedBy) ? `<div class="audit-tag">👤 Work done by: <strong>${h.updatedBy || h.loggedBy}</strong>${h.updatedAt ? ' on ' + h.updatedAt : ''}</div>` : ''}
           <div style="display:flex; gap:0.4rem; margin-top:0.5rem;">
             <button type="button" class="btn-action btn-edit btn-sm" onclick="editHearingRecord('${targetCase.id}', ${index})">✎ Edit Hearing</button>
             <button type="button" class="btn-action btn-delete btn-sm" onclick="deleteHearingRecord('${targetCase.id}', ${index})">🗑️ Delete</button>
@@ -3963,6 +4701,7 @@
 
     function handleHearingSubmit(e) {
       e.preventDefault();
+      if (!requirePerm('edit', 'log or update hearing outcomes')) return;
       const caseId = document.getElementById('modalCaseId').value;
       const targetCase = cases.find(c => c.id === caseId);
       if (!targetCase) return;
@@ -3977,19 +4716,25 @@
 
       if (!targetCase.history) targetCase.history = [];
 
+      const existingHist = (editingIndex >= 0 && editingIndex < targetCase.history.length) ? targetCase.history[editingIndex] : null;
       const hearingRecord = {
         date: hearingDate,
         stage: stage || 'Hearing',
         notes: notes,
         assignedNextDate: newNextDate,
         fee: fee,
-        otherFee: otherFee
+        otherFee: otherFee,
+        loggedBy: existingHist && existingHist.loggedBy ? existingHist.loggedBy : getCurrentActorLabel(),
+        updatedBy: getCurrentActorLabel(),
+        updatedAt: new Date().toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })
       };
 
       if (editingIndex >= 0 && editingIndex < targetCase.history.length) {
         targetCase.history[editingIndex] = hearingRecord;
+        appendAuditEntry(targetCase, `Edited Hearing (${hearingDate})`);
       } else {
         targetCase.history.push(hearingRecord);
+        appendAuditEntry(targetCase, `Logged Hearing (${hearingDate} -> ${newNextDate})`);
       }
 
       targetCase.nextDate = newNextDate;
@@ -4002,6 +4747,7 @@
     }
 
     function editHearingRecord(caseId, index) {
+      if (!requirePerm('edit', 'edit hearing records')) return;
       const targetCase = cases.find(c => c.id === caseId);
       if (!targetCase || !targetCase.history[index]) return;
 
@@ -4033,11 +4779,14 @@
     }
 
     function deleteHearingRecord(caseId, index) {
+      if (!requirePerm('delete', 'delete hearing records')) return;
       if (!confirm("Are you sure you want to delete this hearing record?")) return;
       const targetCase = cases.find(c => c.id === caseId);
       if (!targetCase || !targetCase.history) return;
 
+      const removedH = targetCase.history[index];
       targetCase.history.splice(index, 1);
+      appendAuditEntry(targetCase, `Deleted Hearing (${removedH ? removedH.date : ''})`);
       saveCaseLocallyAndQueue(targetCase, false);
       openHistoryModal(caseId);
       renderCases();
@@ -4218,6 +4967,7 @@
 
     /* --- FORWARD CASE MODAL --- */
     function openForwardCaseModal() {
+      if (!requirePerm('forward', 'forward cases')) return;
       const todayStr = new Date().toISOString().split('T')[0];
       document.getElementById('forwardSourceDate').value = todayStr;
       document.getElementById('forwardTargetDate').value = '';
@@ -4312,9 +5062,12 @@
             notes: reason,
             assignedNextDate: targetDate,
             fee: 0,
-            otherFee: 0
+            otherFee: 0,
+            loggedBy: getCurrentActorLabel(),
+            updatedAt: new Date().toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })
           });
           targetCase.nextDate = targetDate;
+          appendAuditEntry(targetCase, `Forwarded Case (${sourceDate} -> ${targetDate})`);
           saveCaseLocallyAndQueue(targetCase, false);
         }
       }
@@ -4871,6 +5624,7 @@
         projectId: FIREBASE_SERVICE_ACCOUNT_META.project_id,
         serviceAccountEmail: FIREBASE_SERVICE_ACCOUNT_META.client_email,
         deviceToken: currentFcmToken || null,
+        sentBy: getCurrentActorLabel(),
         status: 'QUEUED',
         createdAt: new Date().toISOString()
       };
@@ -4914,6 +5668,7 @@
               projectId: FIREBASE_SERVICE_ACCOUNT_META.project_id,
               serviceAccountEmail: FIREBASE_SERVICE_ACCOUNT_META.client_email,
               deviceToken: currentFcmToken || null,
+              sentBy: getCurrentActorLabel(),
               status: 'QUEUED_BULK',
               createdAt: new Date().toISOString()
             });
@@ -4936,6 +5691,7 @@
 
     /* --- MODAL BULK MESSAGING FUNCTIONS --- */
     function openBulkMessageModal() {
+      if (!requirePerm('messaging', 'send hearing or bulk messages')) return;
       const todayStr = new Date().toISOString().split('T')[0];
       document.getElementById('modalMsgDate').value = todayStr;
       const courtSel = document.getElementById('modalMsgCourt');
