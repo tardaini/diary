@@ -1338,7 +1338,7 @@
   <div id="detailedCauseListModal" class="modal">
     <div class="modal-content window-modal-content" id="detailedCauseListWindowContent" style="max-width: 980px;">
       <div class="window-titlebar" onmousedown="startDrag(event, 'detailedCauseListWindowContent')">
-        <div class="window-title">🖨️ Detailed Court-Wise Cause List (Case Type, Case No, Act & Section, Parties, Client Name (Role & Name), Client Phone, Stage)</div>
+        <div class="window-title">🖨️ Detailed Court-Wise Cause List (Sl.No, Case Type/No., Act&Section, Parties, Stage, Client Type & Name & Mobile, Hearing Fee, Next Hearing, Remark)</div>
         <div class="window-controls">
           <button type="button" class="window-btn" onclick="toggleWindowMinimize('detailedCauseListWindowContent')" title="Minimize">_</button>
           <button type="button" class="window-btn" onclick="toggleWindowMaximize('detailedCauseListWindowContent')" title="Maximize / Restore">□</button>
@@ -3379,19 +3379,29 @@
         courtCases.forEach((c, idx) => {
           const currentCauseVal = c.causeNo || (idx + 1);
           const clientRoleAndName = c.clientName || c.client || 'NA';
-          const clientPhone = c.clientPhone || 'NA';
+          const clientPhone = (c.clientPhone && c.clientPhone !== 'NA') ? `📞 ${c.clientPhone}` : 'NA';
+          const clientCombined = `${clientRoleAndName}${clientPhone !== 'NA' ? '<br><small>' + clientPhone + '</small>' : ''}`;
+          const lastHist = (c.history && c.history.length > 0) ? c.history[c.history.length - 1] : null;
+          const hearingFeeDisplay = lastHist && (lastHist.fee || lastHist.otherFee)
+            ? `₹${(parseFloat(lastHist.fee || 0) + parseFloat(lastHist.otherFee || 0)).toFixed(0)}`
+            : '';
+          const lastRemark = lastHist && lastHist.notes ? lastHist.notes : '';
           tableRows += `
             <tr class="detailed-cause-row" data-case-id="${c.id}">
-              <td style="width:70px;">
-                <input type="text" class="cause-no-input" style="width:60px !important;" value="${currentCauseVal}" onchange="updateCaseCauseNo('${c.id}', this.value)">
+              <td style="width:65px;">
+                <input type="text" class="cause-no-input" style="width:55px !important;" value="${currentCauseVal}" onchange="updateCaseCauseNo('${c.id}', this.value)">
               </td>
-              <td><span class="status-tag" style="background:#fef3c7; color:#92400e; border-color:#fde68a;">${c.caseType || 'मूल वाद'}</span></td>
-              <td><strong>${c.caseNo || 'NA'}</strong></td>
+              <td>
+                <span class="status-tag" style="background:#fef3c7; color:#92400e; border-color:#fde68a;">${c.caseType || 'मूल वाद'}</span><br>
+                <strong>${c.caseNo || 'NA'}</strong>
+              </td>
               <td>${c.actSection || 'NA'}</td>
               <td><strong>${c.parties || 'NA'}</strong></td>
-              <td>${clientRoleAndName}</td>
-              <td>${clientPhone}</td>
               <td>${c.stage || 'NA'}</td>
+              <td>${clientCombined}</td>
+              <td>${hearingFeeDisplay}</td>
+              <td></td>
+              <td>${lastRemark}</td>
             </tr>
           `;
         });
@@ -3407,14 +3417,15 @@
             <table style="margin-top:0;">
               <thead>
                 <tr>
-                  <th>Sl. No</th>
-                  <th>Case Type</th>
-                  <th>Case No</th>
-                  <th>Act & Section</th>
+                  <th>Sl.No</th>
+                  <th>Case Type/No.</th>
+                  <th>Act&Section</th>
                   <th>Parties</th>
-                  <th>Client Name (Role & Name)</th>
-                  <th>Client Phone</th>
-                  <th>Current Stage</th>
+                  <th>Stage</th>
+                  <th>Client Type & Name & Mobile</th>
+                  <th>Hearing Fee</th>
+                  <th>Next Hearing</th>
+                  <th>Remark</th>
                 </tr>
               </thead>
               <tbody>
@@ -3465,17 +3476,23 @@
         courtCases.forEach((c, idx) => {
           const causeSl = causeNoMap[c.id] || c.causeNo || (idx + 1);
           const clientRoleAndName = c.clientName || c.client || 'NA';
-          const clientPhone = c.clientPhone || 'NA';
+          const clientPhone = (c.clientPhone && c.clientPhone !== 'NA') ? `Mob: ${c.clientPhone}` : '';
+          const clientCombined = `${clientRoleAndName}${clientPhone ? '<br>' + clientPhone : ''}`;
+          const lastHist = (c.history && c.history.length > 0) ? c.history[c.history.length - 1] : null;
+          const hearingFeeDisplay = lastHist && (lastHist.fee || lastHist.otherFee)
+            ? `₹${(parseFloat(lastHist.fee || 0) + parseFloat(lastHist.otherFee || 0)).toFixed(0)}`
+            : '';
           rowsHtml += `
             <tr>
               <td style="text-align:center; font-weight:bold;">${causeSl}</td>
-              <td>${c.caseType || 'मूल वाद'}</td>
-              <td style="font-weight:bold;">${c.caseNo || 'NA'}</td>
+              <td>${c.caseType || 'मूल वाद'}<br><strong>${c.caseNo || 'NA'}</strong></td>
               <td>${c.actSection || 'NA'}</td>
               <td><strong>${c.parties || 'NA'}</strong></td>
-              <td>${clientRoleAndName}</td>
-              <td>${clientPhone}</td>
               <td>${c.stage || 'NA'}</td>
+              <td>${clientCombined}</td>
+              <td style="text-align:right;">${hearingFeeDisplay}</td>
+              <td></td>
+              <td></td>
             </tr>
           `;
         });
@@ -3486,14 +3503,15 @@
             <table>
               <thead>
                 <tr>
-                  <th style="width:42px; text-align:center;">Sl. No</th>
-                  <th style="width:80px;">Case Type</th>
-                  <th style="width:95px;">Case No</th>
-                  <th style="width:105px;">Act & Section</th>
+                  <th style="width:36px; text-align:center;">Sl.No</th>
+                  <th style="width:95px;">Case Type/No.</th>
+                  <th style="width:90px;">Act&amp;Section</th>
                   <th>Parties</th>
-                  <th style="width:135px;">Client Name (Role & Name)</th>
-                  <th style="width:90px;">Client Phone</th>
-                  <th style="width:115px;">Current Stage</th>
+                  <th style="width:85px;">Stage</th>
+                  <th style="width:125px;">Client Type &amp; Name &amp; Mobile</th>
+                  <th style="width:62px;">Hearing Fee</th>
+                  <th style="width:72px;">Next Hearing</th>
+                  <th style="width:95px;">Remark</th>
                 </tr>
               </thead>
               <tbody>
@@ -3511,23 +3529,23 @@
         <head>
           <title>Detailed Cause List - ${targetDate}</title>
           <style>
-            @page { size: A4 portrait; margin: 10mm; }
-            body { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: 10px; }
-            .doc-header { border-bottom: 2px solid #1e293b; padding-bottom: 6px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-end; }
-            .doc-header h1 { font-size: 15px; margin: 0; color: #0f766e; text-transform: uppercase; }
-            .doc-header p { margin: 2px 0 0 0; font-size: 11px; color: #475569; }
-            .court-block { margin-bottom: 14px; page-break-inside: avoid; }
-            .court-heading { background: #1e293b; color: #ffffff; padding: 5px 8px; font-weight: bold; font-size: 11.5px; border-radius: 3px 3px 0 0; }
+            @page { size: A4 landscape; margin: 8mm; }
+            body { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: 9.5px; }
+            .doc-header { border-bottom: 2px solid #1e293b; padding-bottom: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-end; }
+            .doc-header h1 { font-size: 14px; margin: 0; color: #0f766e; text-transform: uppercase; }
+            .doc-header p { margin: 2px 0 0 0; font-size: 10px; color: #475569; }
+            .court-block { margin-bottom: 12px; page-break-inside: avoid; }
+            .court-heading { background: #1e293b; color: #ffffff; padding: 5px 8px; font-weight: bold; font-size: 11px; border-radius: 3px 3px 0 0; }
             table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #cbd5e1; padding: 5px 6px; text-align: left; vertical-align: top; }
-            th { background: #f1f5f9; color: #1e293b; font-size: 9px; text-transform: uppercase; }
+            th, td { border: 1px solid #cbd5e1; padding: 5px 5px; text-align: left; vertical-align: top; }
+            th { background: #f1f5f9; color: #1e293b; font-size: 8.5px; text-transform: uppercase; }
           </style>
         </head>
         <body>
           <div class="doc-header">
             <div>
               <h1>Advocate Pt. Sudhanshu Kumar Tiwari — Detailed Daily Cause List</h1>
-              <p>Court-Wise Schedule with Case Type, Case No, Act & Section, Parties, Client Name (Role & Name), Client Phone & Current Stage</p>
+              <p>Court-Wise Daily Cause List Report</p>
             </div>
             <div style="text-align:right; font-size:11px;">
               <div><strong>Hearing Date:</strong> ${targetDate}</div>
