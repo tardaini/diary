@@ -1531,7 +1531,7 @@
   <div id="detailedCauseListModal" class="modal">
     <div class="modal-content window-modal-content" id="detailedCauseListWindowContent" style="max-width: 980px;">
       <div class="window-titlebar" onmousedown="startDrag(event, 'detailedCauseListWindowContent')">
-        <div class="window-title">🖨️ Detailed Court-Wise Cause List (Sl.No, Case Type/No., Act&Section, Parties, Stage, Client Type & Name & Mobile, Hearing Fee, Next Hearing)</div>
+        <div class="window-title">🖨️ Detailed Court-Wise Cause List (Sl.No, Case Type/No., Act&Section, Dispute Property, Parties, Stage, Client Type & Name & Mobile, Hearing Fee, Next Hearing)</div>
         <div class="window-controls">
           <button type="button" class="window-btn" onclick="toggleWindowMinimize('detailedCauseListWindowContent')" title="Minimize">_</button>
           <button type="button" class="window-btn" onclick="toggleWindowMaximize('detailedCauseListWindowContent')" title="Maximize / Restore">□</button>
@@ -4090,6 +4090,7 @@
                 <strong>${c.caseNo || 'NA'}</strong>
               </td>
               <td>${c.actSection || 'NA'}</td>
+              <td>${c.disputeProperty || 'NA'}</td>
               <td><strong>${c.parties || 'NA'}</strong></td>
               <td>${c.stage || 'NA'}</td>
               <td>${clientCombined}</td>
@@ -4113,6 +4114,7 @@
                   <th>Sl.No</th>
                   <th>Case Type/No.</th>
                   <th>Act&Section</th>
+                  <th>Dispute Property</th>
                   <th>Parties</th>
                   <th>Stage</th>
                   <th>Client Type & Name & Mobile</th>
@@ -4179,6 +4181,7 @@
               <td class="col-sl" style="text-align:center; font-weight:bold;">${causeSl}</td>
               <td class="col-case">${c.caseType || 'मूल वाद'}<br><strong>${c.caseNo || 'NA'}</strong></td>
               <td class="col-act">${c.actSection || 'NA'}</td>
+              <td class="col-property">${c.disputeProperty || 'NA'}</td>
               <td class="col-parties"><strong>${c.parties || 'NA'}</strong></td>
               <td class="col-stage">${c.stage || 'NA'}</td>
               <td class="col-client">${clientCombined}</td>
@@ -4197,6 +4200,7 @@
                   <th class="col-sl" style="text-align:center;">Sl.No</th>
                   <th class="col-case">Case Type/No.</th>
                   <th class="col-act">Act&amp;Section</th>
+                  <th class="col-property">Dispute Property</th>
                   <th class="col-parties">Parties</th>
                   <th class="col-stage">Stage</th>
                   <th class="col-client">Client Type &amp; Name &amp; Mobile</th>
