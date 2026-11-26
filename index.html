@@ -27,6 +27,127 @@
       color: var(--text);
     }
 
+
+    /* Top Row Centered Quick Search Case Box */
+    .top-quick-search-wrapper {
+      position: relative;
+      flex: 1 1 320px;
+      max-width: 460px;
+      min-width: 260px;
+      margin: 0 auto;
+    }
+
+    .top-quick-search-input-group {
+      display: flex;
+      align-items: center;
+      background: #0f172a;
+      border: 1px solid #38bdf8;
+      border-radius: 20px;
+      padding: 0.25rem 0.75rem;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .top-quick-search-input-group:focus-within {
+      border-color: #14b8a6;
+      box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.25);
+    }
+
+    .top-quick-search-input-group input {
+      background: transparent;
+      border: none;
+      color: #ffffff;
+      padding: 0.35rem 0.5rem;
+      margin: 0;
+      font-size: 0.85rem;
+      outline: none;
+      width: 100%;
+    }
+
+    .top-quick-search-input-group input::placeholder {
+      color: #94a3b8;
+    }
+
+    .top-quick-search-clear {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      padding: 0 0.25rem;
+      margin: 0;
+      width: auto;
+      font-size: 0.85rem;
+      display: none;
+    }
+
+    .top-quick-search-clear:hover {
+      color: #ffffff;
+    }
+
+    .top-quick-search-results {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      color: #1e293b;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+      max-height: 360px;
+      overflow-y: auto;
+      z-index: 10000;
+      display: none;
+    }
+
+    .quick-search-result-item {
+      padding: 0.65rem 0.85rem;
+      border-bottom: 1px solid #e2e8f0;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .quick-search-result-item:last-child {
+      border-bottom: none;
+    }
+
+    .quick-search-result-item:hover {
+      background-color: #f0fdfa;
+    }
+
+    .quick-search-result-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .quick-search-result-title {
+      font-weight: 700;
+      font-size: 0.86rem;
+      color: #0f172a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .quick-search-result-meta {
+      font-size: 0.76rem;
+      color: #475569;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .quick-search-result-actions {
+      display: flex;
+      gap: 0.3rem;
+      flex-shrink: 0;
+    }
+
     /* Sync Indicator Bar */
     .sync-status-bar {
       background: #0f172a;
@@ -995,6 +1116,16 @@
     <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
       <h1>⚖️ Advocate Pt. Sudhanshu Kumar Tiwari - Case Diary</h1>
       <span id="activeUserRoleBadge" class="user-role-badge">👑 Main User (Full Access)</span>
+    </div>
+
+    <!-- Centered Top Row Search Case Box -->
+    <div class="top-quick-search-wrapper" id="topQuickSearchWrapper">
+      <div class="top-quick-search-input-group">
+        <span style="color:#38bdf8; font-size:0.9rem;">🔍</span>
+        <input type="text" id="topQuickCaseSearchInput" placeholder="Search Case to Modify / Update (Case No, Parties, Client, Court)..." oninput="handleTopQuickCaseSearch()" onfocus="handleTopQuickCaseSearch()" autocomplete="off">
+        <button type="button" id="topQuickSearchClearBtn" class="top-quick-search-clear" onclick="clearTopQuickCaseSearch()" title="Clear Search">✕</button>
+      </div>
+      <div id="topQuickSearchResults" class="top-quick-search-results"></div>
     </div>
     
     <div class="header-btns">
@@ -4441,6 +4572,10 @@
     function resetForm() {
       document.getElementById('caseForm').reset();
       document.getElementById('caseId').value = '';
+      const formHeading = document.getElementById('formTitle');
+      const saveBtn = document.getElementById('saveBtn');
+      if (formHeading) formHeading.innerText = 'Register New Case';
+      if (saveBtn) saveBtn.innerText = 'Save Case File';
       setDefaultDate();
       tempCaseDocuments = [];
       renderTempDocumentsList();
@@ -5786,6 +5921,115 @@
       hideLoader();
       alert(`✅ ${checked.length} Hearing Date messages queued via FCM (contact-d0800)!`);
     }
+
+
+    /* --- TOP ROW CENTERED QUICK CASE SEARCH & MODIFY --- */
+    function handleTopQuickCaseSearch() {
+      const inputEl = document.getElementById('topQuickCaseSearchInput');
+      const resultsBox = document.getElementById('topQuickSearchResults');
+      const clearBtn = document.getElementById('topQuickSearchClearBtn');
+      if (!inputEl || !resultsBox) return;
+
+      const query = inputEl.value.trim().toLowerCase();
+      if (clearBtn) clearBtn.style.display = query ? 'inline-block' : 'none';
+
+      if (!query) {
+        resultsBox.style.display = 'none';
+        resultsBox.innerHTML = '';
+        return;
+      }
+
+      const matched = cases.filter(c =>
+        (c.caseNo && c.caseNo.toLowerCase().includes(query)) ||
+        (c.parties && c.parties.toLowerCase().includes(query)) ||
+        (c.clientName && c.clientName.toLowerCase().includes(query)) ||
+        (c.clientPhone && c.clientPhone.toLowerCase().includes(query)) ||
+        (c.court && c.court.toLowerCase().includes(query)) ||
+        (c.actSection && c.actSection.toLowerCase().includes(query)) ||
+        (c.disputeProperty && c.disputeProperty.toLowerCase().includes(query)) ||
+        (c.nextDate && c.nextDate.includes(query))
+      ).slice(0, 15);
+
+      if (matched.length === 0) {
+        resultsBox.innerHTML = '<div style="padding:0.85rem; text-align:center; color:#64748b; font-size:0.84rem;">No matching cases found.</div>';
+        resultsBox.style.display = 'block';
+        return;
+      }
+
+      let html = '';
+      matched.forEach(c => {
+        const safeCaseNo = c.caseNo || 'NA';
+        const safeParties = c.parties || 'NA';
+        const safeCourt = c.court || 'N/A';
+        const safeClient = c.clientName || c.client || 'N/A';
+        const safeNextDate = c.nextDate || 'N/A';
+        const safeStatus = c.status || 'Ongoing';
+
+        html += `
+          <div class="quick-search-result-item" onclick="selectCaseFromTopSearch('${c.id}')">
+            <div class="quick-search-result-info">
+              <div class="quick-search-result-title">
+                <span style="color:#0284c7;">[${safeCaseNo}]</span> ${safeParties}
+              </div>
+              <div class="quick-search-result-meta">
+                🏛️ ${safeCourt} | 👤 ${safeClient} | 📅 ${safeNextDate} | <strong>${safeStatus}</strong>
+              </div>
+            </div>
+            <div class="quick-search-result-actions" onclick="event.stopPropagation()">
+              ${hasPerm('edit') ? `<button type="button" class="btn-action btn-edit" style="padding:0.25rem 0.5rem; font-size:0.75rem;" onclick="selectCaseFromTopSearch('${c.id}')">✎ Edit</button>` : ''}
+              <button type="button" class="btn-action btn-history" style="padding:0.25rem 0.5rem; font-size:0.75rem;" onclick="openHistoryFromTopSearch('${c.id}')">📖 Hearing</button>
+            </div>
+          </div>
+        `;
+      });
+
+      resultsBox.innerHTML = html;
+      resultsBox.style.display = 'block';
+    }
+
+    function selectCaseFromTopSearch(caseId) {
+      clearTopQuickCaseSearch();
+      if (hasPerm('edit')) {
+        editCase(caseId);
+        const formHeading = document.getElementById('formTitle');
+        const saveBtn = document.getElementById('saveBtn');
+        const targetCase = cases.find(c => c.id === caseId);
+        if (formHeading && targetCase) {
+          formHeading.innerText = `✏️ Modify / Update Case Details (${targetCase.caseNo})`;
+        }
+        if (saveBtn) {
+          saveBtn.innerText = '💾 Update Case File';
+        }
+      } else {
+        openHistoryModal(caseId);
+      }
+    }
+
+    function openHistoryFromTopSearch(caseId) {
+      clearTopQuickCaseSearch();
+      openHistoryModal(caseId);
+    }
+
+    function clearTopQuickCaseSearch() {
+      const inputEl = document.getElementById('topQuickCaseSearchInput');
+      const resultsBox = document.getElementById('topQuickSearchResults');
+      const clearBtn = document.getElementById('topQuickSearchClearBtn');
+      if (inputEl) inputEl.value = '';
+      if (resultsBox) {
+        resultsBox.style.display = 'none';
+        resultsBox.innerHTML = '';
+      }
+      if (clearBtn) clearBtn.style.display = 'none';
+    }
+
+    document.addEventListener('click', function(e) {
+      const wrapper = document.getElementById('topQuickSearchWrapper');
+      const resultsBox = document.getElementById('topQuickSearchResults');
+      if (wrapper && resultsBox && !wrapper.contains(e.target)) {
+        resultsBox.style.display = 'none';
+      }
+    });
+
 
     window.onload = function() {
       initLocalStorageData();
